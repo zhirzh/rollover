@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TEST</title>
+    <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        canvas {
+            height: 100vh;
+            width: 100vw;
+            display: block;
+        }
+    </style>
+</head>
+<body onload="webGLStart();">
+    <canvas id="canvas" height="300" width="600"></canvas>
+</body>
+<script type="text/javascript" src="index.js"></script>
+
+<script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec2 aVertexPosition;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform bool uIsBuffer;
+    uniform float uBGAspect;
+
+    varying vec2 vTextureCoord;
+    varying float vBGAspect;
+
+    void main(void) {
+        if (uIsBuffer) {
+            vTextureCoord = aTextureCoord;
+            gl_Position = vec4(aVertexPosition, 0, 1);
+        } else {
+            vec2 topAligned = aVertexPosition * vec2(1, uBGAspect);
+            gl_Position = uPMatrix * uMVMatrix * vec4(topAligned, 0, 1);
+            vTextureCoord = aTextureCoord;
+            vBGAspect = uBGAspect;
+        }
+    }
+</script>
+
+<script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+    uniform vec2 uTextureOffset;
+    uniform bool uIsBuffer;
+
+    varying vec2 vTextureCoord;
+    varying float vBGAspect;
+
+    void main(void) {
+        if (uIsBuffer) {
+            gl_FragColor = texture2D(uSampler, vTextureCoord.xy);
+        } else {
+            float multiplier = 0.2;
+            float power = 2.;
+
+            vec2 XY;
+            vec2 A;
+            float L;
+            bvec2 isValid;
+
+            A = vec2(multiplier, multiplier);
+            XY = vTextureCoord.xy;
+
+            // Normalize components from range {0, 1} to {-1, 1}
+            XY = (2. * XY) - 1.;
+            L = length(XY);
+
+            // Calculate distortion
+            XY = XY * (1.- A * pow(L, power));
+
+            // Filter valid regions
+            isValid = lessThanEqual(abs(XY), vec2(1, 1));
+            if (isValid.x && isValid.y) {
+                // De-normalize
+                XY = (XY + 1.) / 2.;
+                gl_FragColor = texture2D(uSampler, XY + uTextureOffset);
+            } else {
+                discard;
+            }
+        }
+    }
+</script>
+</html>
