@@ -14,4 +14,4 @@ Add a rolling background to the website.
 - [x] Add multiple distortion modes
 - [x] Refactor code
 - [x] Add *proper* demo
-- [ ] Upper and limits limits
+- [ ] Upper and lower scroll limits
