@@ -134,9 +134,9 @@ function drawScene() {
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    mat4.ortho(-1, 1, -1, 1, .1, 100, pMatrix);
+    mat4.ortho(pMatrix, -1, 1, -1, 1, .1, 100);
     mat4.identity(mvMatrix);
-    mat4.translate(mvMatrix, [0, 0, -1]);
+    mat4.translate(mvMatrix, mvMatrix, [0, 0, -1]);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenVertexPositionBuffer);
     gl.vertexAttribPointer(aVertexPosition, mainScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
