@@ -323,7 +323,7 @@ function resize() {
 function drawSceneTexture() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, sampleTextureFramebuffer);
     gl.viewport(0, 0, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, textureScreenVertexPositionBuffer);
     gl.vertexAttribPointer(aVertexPosition, textureScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -346,7 +346,7 @@ function drawSceneTexture() {
 function drawScene() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenVertexPositionBuffer);
     gl.vertexAttribPointer(aVertexPosition, mainScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
