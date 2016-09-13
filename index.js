@@ -21,6 +21,9 @@ var uTextureOffset;
 var backgroundTexture;
 var backgroundImage;
 
+var sampleTexture;
+var sampleTextureFramebuffer;
+
 var textureScreenVertexPositionBuffer;
 var textureScreenTextureCoordBuffer;
 var textureScreenIndexBuffer;
@@ -28,12 +31,6 @@ var textureScreenIndexBuffer;
 var mainScreenVertexPositionBuffer;
 var mainScreenTextureCoordBuffer;
 var mainScreenIndexBuffer;
-
-var sampleTextureFramebuffer;
-var sampleTexture;
-
-var mvMatrix = mat4.create();
-var pMatrix = mat4.create();
 
 
 function getShader(gl, id) {
@@ -281,12 +278,18 @@ function initMainScreen() {
     mainScreenIndexBuffer.itemSize = 1;
     mainScreenIndexBuffer.numItems = 6;
 
+    initMVPMatrices();
+}
 
-    mat4.ortho(pMatrix, -1, 1, -1, 1, .1, 100);
+
+function initMVPMatrices() {
+    var mvMatrix = mat4.create();
     mat4.fromTranslation(mvMatrix, [0, 0, -1]);
-
-    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
     gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
+
+    var pMatrix = mat4.create();
+    mat4.ortho(pMatrix, -1, 1, -1, 1, .1, 100);
+    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
 }
 
 
