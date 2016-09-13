@@ -58,6 +58,13 @@
 
     varying vec2 vTextureCoord;
 
+    vec2 arctanDistortion(vec2 XY, float factor, vec2 multiplier);
+    vec2 arctan2Distortion(vec2 XY, vec2 factor, vec2 multiplier);
+    vec2 linearDistortion(vec2 XY, vec2 multiplier);
+    vec2 parabolicDistortion(vec2 XY, vec2 multiplier);
+    vec2 polynomialDistortion(vec2 XY, float factor, vec2 multiplier);
+    vec2 polynomial2Distortion(vec2 XY, vec2 factor, vec2 multiplier);
+
     void main() {
         vec2 XY;
 
@@ -65,32 +72,39 @@
             // Add initial and current offset
             XY = vTextureCoord + uInitialTextureOffset + uTextureOffset;
         } else {
-            vec2 multiplier = vec2(.08, 0);
-            vec2 recover = vec2(1.09, 1);
+            vec2 multiplier = vec2(.1, 0);
+            vec2 recover = vec2(1, 1);
+            float factor = 0.7; // can also be vec2
             vec2 originOffset = vec2(0, -1);
 
             XY = vTextureCoord;
             float R;
             bvec2 isValid;
 
-            // Normalize components from range {0, 1} to {-1, 1}
+            /*Normalize components from range {0, 1} to {-1, 1}*/
             XY = (2. * XY) - 1.;
 
-            // Apply origin offset
+            /*Shift offset*/
             XY += originOffset;
-            R = dot(XY, XY);
+
+            /*Calculate distortion*/
+            // XY = arctanDistortion(XY, factor, multiplier);
+            // XY = arctan2Distortion(XY, factor, multiplier);  // typeof factor === vec2
+            // XY = linearDistortion(XY, multiplier);
+            XY = parabolicDistortion(XY, multiplier);
+            // XY = polynomialDistortion(XY, factor, multiplier);
+            // XY = polynomial2Distortion(XY, factor, multiplier);  // typeof factor === vec2
+
+            /*Reset origin*/
             XY -= originOffset;
 
-            // Calculate distortion
-            XY *= (1. - multiplier * R);
+            /*Recover edges*/
+            XY *= recover;
 
-            // Recover edges
-            XY *=  recover;
-
-            // Filter valid regions
+            /*Filter valid regions*/
             isValid = lessThanEqual(abs(XY), vec2(1, 1));
             if (isValid.x && isValid.y) {
-                // De-normalize
+                /*De-normalize*/
                 XY = (XY + 1.) / 2.;
             } else {
                 discard;
@@ -98,6 +112,54 @@
         }
 
         gl_FragColor = texture2D(uSampler, XY);
+    }
+
+    vec2 arctanDistortion(vec2 XY, float factor, vec2 multiplier) {
+        if (factor == 0.) {
+            return XY * (1. + multiplier);
+        }
+
+        float t = factor * length(XY);
+        float R = atan(t) / t;
+        return XY * (1. + multiplier) * R;
+    }
+
+    vec2 arctan2Distortion(vec2 XY, vec2 factor, vec2 multiplier) {
+        vec2 t = factor * length(XY);
+        vec2 R;
+
+        if (factor.x == 0. || factor.y == 0.) {
+            if (factor.x == 0.) {
+                R = vec2(1, atan(t.y) / t.y);
+            }
+            if (factor.y == 0.) {
+                R = vec2(atan(t.x) / t.x, 1);
+            }
+        } else {
+            R = atan(t) / t;
+        }
+
+        return XY * (1. + multiplier) * R;
+    }
+
+    vec2 linearDistortion(vec2 XY, vec2 multiplier) {
+        float R = length(XY);
+        return XY * (1. - multiplier * R);
+    }
+
+    vec2 parabolicDistortion(vec2 XY, vec2 multiplier) {
+        float R = dot(XY, XY);
+        return XY * (1. - multiplier * R);
+    }
+
+    vec2 polynomialDistortion(vec2 XY, float factor, vec2 multiplier) {
+        float R = pow(length(XY), factor);
+        return XY * (1. - multiplier * R);
+    }
+
+    vec2 polynomial2Distortion(vec2 XY, vec2 factor, vec2 multiplier) {
+        vec2 R = pow(vec2(length(XY), length(XY)), factor);
+        return XY * (1. - multiplier * R);
     }
 </script>
 </html>
