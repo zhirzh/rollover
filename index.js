@@ -1,4 +1,3 @@
-
 'use strict';
 
 var fps = 30;
@@ -111,9 +110,9 @@ function drawSceneTexture() {
     gl.uniformMatrix4fv(uMVMatrixLoc, false, mvMatrix);
     gl.drawElements(gl.TRIANGLES, textureScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
-    // gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-    // gl.generateMipmap(gl.TEXTURE_2D);
-    // gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 
@@ -134,9 +133,7 @@ function drawScene(HRTimestamp) {
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    /* 9:16 */
     mat4.ortho(-1, 1, -1, 1, .1, 100, pMatrix);
-    // mat4.ortho(-1.1, 1.1, -1.1, 1.1, .1, 100, pMatrix);
     mat4.identity(mvMatrix);
     mat4.translate(mvMatrix, [0, 0, -1]);
 
@@ -203,9 +200,7 @@ function initProgram() {
 function initbackgroundTexture() {
     backgroundTexture = gl.createTexture();
     backgroundTexture.image = new Image();
-    backgroundTexture.image.src = 'pup.1.jpg';
     backgroundTexture.image.src = 'moseshi.jpg';
-    backgroundTexture.image.src = 'long.jpg';
     backgroundTexture.image.onload = function () {
         /* use TEXTURE0 for backgroundTexture */
         gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
