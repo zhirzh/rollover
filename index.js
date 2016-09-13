@@ -84,9 +84,9 @@ function webGLStart() {
     var offset = 0;
     window.addEventListener('keydown', function(e) {
         if (e.key === 'ArrowDown') {
-            offset -= .01;
+            offset -= .002;
         } else if (e.key === 'ArrowUp') {
-            offset += .01;
+            offset += .002;
         }
         gl.uniform2f(uTextureOffset, 0, offset);
     });
@@ -136,8 +136,7 @@ function initProgram() {
 
 function initBackgroundTexture() {
     backgroundImage = new Image();
-    backgroundImage.src = 'moseshi.2.jpg';
-    backgroundImage.src = 'long.jpg';
+    backgroundImage.src = 'moseshi.jpg';
     backgroundImage.addEventListener('load', function () {
         /* use TEXTURE0 for backgroundTexture */
         backgroundTexture = gl.createTexture();

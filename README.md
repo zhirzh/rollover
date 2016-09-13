@@ -12,5 +12,6 @@ Add a rolling background to the website.
 - [x] Preserve image aspect
 - [x] Shift viewport origin
 - [x] Add multiple distortion modes
+- [x] Refactor code
+- [x] Add *proper* demo
 - [ ] Upper and limits limits
-- [ ] Refactor code
