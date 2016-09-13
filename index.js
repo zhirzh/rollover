@@ -280,6 +280,13 @@ function initMainScreen() {
     ]), gl.STATIC_DRAW);
     mainScreenIndexBuffer.itemSize = 1;
     mainScreenIndexBuffer.numItems = 6;
+
+
+    mat4.ortho(pMatrix, -1, 1, -1, 1, .1, 100);
+    mat4.fromTranslation(mvMatrix, [0, 0, -1]);
+
+    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
+    gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
 }
 
 
@@ -328,8 +335,6 @@ function drawSceneTexture() {
     gl.uniform1i(uIsBuffer, true);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, textureScreenIndexBuffer);
-    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
-    gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
     gl.drawElements(gl.TRIANGLES, textureScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
     // gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
@@ -343,10 +348,6 @@ function drawScene() {
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    mat4.ortho(pMatrix, -1, 1, -1, 1, .1, 100);
-    mat4.identity(mvMatrix);
-    mat4.translate(mvMatrix, mvMatrix, [0, 0, -1]);
-
     gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenVertexPositionBuffer);
     gl.vertexAttribPointer(aVertexPosition, mainScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
@@ -357,7 +358,5 @@ function drawScene() {
     gl.uniform1i(uIsBuffer, false);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mainScreenIndexBuffer);
-    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
-    gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
     gl.drawElements(gl.TRIANGLES, mainScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 }
