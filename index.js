@@ -39,7 +39,7 @@ var pMatrix = mat4.create();
 function getShader(gl, id) {
     var shaderScript = document.getElementById(id);
     if (!shaderScript) {
-        return null;
+        return;
     }
 
     var str = '';
@@ -57,7 +57,7 @@ function getShader(gl, id) {
     } else if (shaderScript.type === 'x-shader/x-vertex') {
         shader = gl.createShader(gl.VERTEX_SHADER);
     } else {
-        return null;
+        return;
     }
 
     gl.shaderSource(shader, str);
@@ -65,10 +65,37 @@ function getShader(gl, id) {
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         console.error(gl.getShaderInfoLog(shader));
-        return null;
+        return;
     }
 
     return shader;
+}
+
+
+function webGLStart() {
+    canvas = document.getElementById('canvas');
+    initWebGL(canvas);
+
+    initProgram();
+
+    initBackgroundTexture();
+    initSampleTexture();
+
+    initMainScreen();
+    initTextureScreen();
+
+    var offset = 0;
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowDown') {
+            offset -= .01;
+        } else if (e.key === 'ArrowUp') {
+            offset += .01;
+        }
+        gl.uniform2f(uTextureOffset, 0, offset);
+    });
+    backgroundImage.addEventListener('load', function() {
+        requestAnimationFrame(render);
+    });
 }
 
 
@@ -90,6 +117,7 @@ function initProgram() {
 
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
         console.error(gl.getProgramInfoLog(shaderProgram));
+        return;
     }
 
     gl.useProgram(shaderProgram);
@@ -255,33 +283,6 @@ function initMainScreen() {
 }
 
 
-function webGLStart() {
-    canvas = document.getElementById('canvas');
-    initWebGL(canvas);
-
-    initProgram();
-
-    initBackgroundTexture();
-    initSampleTexture();
-
-    initMainScreen();
-    initTextureScreen();
-
-    var offset = 0;
-    window.addEventListener('keydown', function(e) {
-        if (e.key === 'ArrowDown') {
-            offset -= .01;
-        } else if (e.key === 'ArrowUp') {
-            offset += .01;
-        }
-        gl.uniform2f(uTextureOffset, 0, offset);
-    });
-    backgroundImage.addEventListener('load', function() {
-        requestAnimationFrame(render);
-    });
-}
-
-
 function render(HRTimestamp) {
     requestAnimationFrame(render);
 
@@ -304,7 +305,7 @@ function resize() {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
 
-    var aspect = (backgroundImage.height / backgroundImage.width) / (canvas.height / canvas.width);
+    var aspect = (canvas.width / canvas.height) / (backgroundImage.width / backgroundImage.height);
     gl.uniform1f(uBGAspect, aspect);
 
     initialTextureOffset = (1 - 1 / aspect) / 2;
@@ -317,16 +318,13 @@ function drawSceneTexture() {
     gl.viewport(0, 0, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-
     gl.bindBuffer(gl.ARRAY_BUFFER, textureScreenVertexPositionBuffer);
     gl.vertexAttribPointer(aVertexPosition, textureScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, textureScreenTextureCoordBuffer);
     gl.vertexAttribPointer(aTextureCoord, textureScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
-    gl.uniform1i(uSampler, 0);
     gl.uniform1i(uIsBuffer, true);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, textureScreenIndexBuffer);
@@ -334,9 +332,9 @@ function drawSceneTexture() {
     gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
     gl.drawElements(gl.TRIANGLES, textureScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
-    gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    // gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
+    // gl.generateMipmap(gl.TEXTURE_2D);
+    // gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 
@@ -355,9 +353,7 @@ function drawScene() {
     gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenTextureCoordBuffer);
     gl.vertexAttribPointer(aTextureCoord, mainScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-    gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
-    gl.uniform1i(uSampler, 1);
     gl.uniform1i(uIsBuffer, false);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mainScreenIndexBuffer);
