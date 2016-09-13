@@ -19,6 +19,7 @@ var uSampler;
 var uTextureOffset;
 
 var backgroundTexture;
+var backgroundImage;
 
 var textureScreenVertexPositionBuffer;
 var textureScreenTextureCoordBuffer;
@@ -28,7 +29,7 @@ var mainScreenVertexPositionBuffer;
 var mainScreenTextureCoordBuffer;
 var mainScreenIndexBuffer;
 
-var sampleFramebuffer;
+var sampleTextureFramebuffer;
 var sampleTexture;
 
 var mvMatrix = mat4.create();
@@ -71,91 +72,6 @@ function getShader(gl, id) {
 }
 
 
-function render(HRTimestamp) {
-    requestAnimationFrame(render);
-
-    if (HRTimestamp - last < 1000 / fps) {
-        return;
-    }
-    last = HRTimestamp;
-
-    resize();
-    drawSceneTexture();
-    drawScene();
-}
-
-
-function resize() {
-    if (canvas.width === canvas.clientWidth && canvas.height === canvas.clientHeight) {
-        return;
-    }
-
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-
-    var aspect = (backgroundTexture.image.height / backgroundTexture.image.width) / (canvas.height / canvas.width);
-    gl.uniform1f(uBGAspect, aspect);
-
-    initialTextureOffset = (1 - 1 / aspect) / 2;
-    gl.uniform2f(uInitialTextureOffset, 0, initialTextureOffset);
-}
-
-
-function drawSceneTexture() {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, sampleFramebuffer);
-    gl.viewport(0, 0, sampleFramebuffer.width, sampleFramebuffer.height);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureScreenVertexPositionBuffer);
-    gl.vertexAttribPointer(aVertexPosition, textureScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureScreenTextureCoordBuffer);
-    gl.vertexAttribPointer(aTextureCoord, textureScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
-    gl.uniform1i(uSampler, 0);
-    gl.uniform1i(uIsBuffer, true);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, textureScreenIndexBuffer);
-    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
-    gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
-    gl.drawElements(gl.TRIANGLES, textureScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-
-    gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-}
-
-
-function drawScene() {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    mat4.ortho(pMatrix, -1, 1, -1, 1, .1, 100);
-    mat4.identity(mvMatrix);
-    mat4.translate(mvMatrix, mvMatrix, [0, 0, -1]);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenVertexPositionBuffer);
-    gl.vertexAttribPointer(aVertexPosition, mainScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenTextureCoordBuffer);
-    gl.vertexAttribPointer(aTextureCoord, mainScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
-    gl.uniform1i(uSampler, 1);
-    gl.uniform1i(uIsBuffer, false);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mainScreenIndexBuffer);
-    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
-    gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
-    gl.drawElements(gl.TRIANGLES, mainScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-}
-
-
 function initWebGL(canvas) {
     gl = canvas.getContext('webgl');
 
@@ -193,50 +109,65 @@ function initProgram() {
 }
 
 
-function initbackgroundTexture() {
-    backgroundTexture = gl.createTexture();
-    backgroundTexture.image = new Image();
-    backgroundTexture.image.src = 'moseshi.2.jpg';
-    backgroundTexture.image.src = 'long.jpg';
-    backgroundTexture.image.addEventListener('load', function () {
+function initBackgroundTexture() {
+    backgroundImage = new Image();
+    backgroundImage.src = 'moseshi.2.jpg';
+    backgroundImage.src = 'long.jpg';
+    backgroundImage.addEventListener('load', function () {
         /* use TEXTURE0 for backgroundTexture */
+        backgroundTexture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, backgroundTexture.image);
-
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, backgroundImage);
 
         gl.bindTexture(gl.TEXTURE_2D, null);
     });
 }
 
 
-function initTextureFramebuffer() {
-    sampleFramebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, sampleFramebuffer);
-    sampleFramebuffer.width = 1024;
-    sampleFramebuffer.height = 1024;
+function initSampleTexture() {
+    initSampleTextureFramebuffer();
 
     /* use TEXTURE1 for sampleTexture */
     sampleTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sampleFramebuffer.width, sampleFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
-    var sampleRenderbuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, sampleRenderbuffer);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, sampleFramebuffer.width, sampleFramebuffer.height);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sampleTexture, 0);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, sampleRenderbuffer);
+    initSampleTextureRenderbuffer();
 
     gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+}
+
+
+function initSampleTextureFramebuffer() {
+    sampleTextureFramebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sampleTextureFramebuffer);
+    sampleTextureFramebuffer.width = sampleTextureFramebuffer.height = 1024;
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+
+function initSampleTextureRenderbuffer() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sampleTextureFramebuffer);
+
+    var sampleTextureRenderbuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, sampleTextureRenderbuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height);
+
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sampleTexture, 0);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, sampleTextureRenderbuffer);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 }
 
 
@@ -330,8 +261,8 @@ function webGLStart() {
 
     initProgram();
 
-    initbackgroundTexture();
-    initTextureFramebuffer();
+    initBackgroundTexture();
+    initSampleTexture();
 
     initMainScreen();
     initTextureScreen();
@@ -345,7 +276,92 @@ function webGLStart() {
         }
         gl.uniform2f(uTextureOffset, 0, offset);
     });
-    backgroundTexture.image.addEventListener('load', function() {
+    backgroundImage.addEventListener('load', function() {
         requestAnimationFrame(render);
     });
+}
+
+
+function render(HRTimestamp) {
+    requestAnimationFrame(render);
+
+    if (HRTimestamp - last < 1000 / fps) {
+        return;
+    }
+    last = HRTimestamp;
+
+    resize();
+    drawSceneTexture();
+    drawScene();
+}
+
+
+function resize() {
+    if (canvas.width === canvas.clientWidth && canvas.height === canvas.clientHeight) {
+        return;
+    }
+
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+    var aspect = (backgroundImage.height / backgroundImage.width) / (canvas.height / canvas.width);
+    gl.uniform1f(uBGAspect, aspect);
+
+    initialTextureOffset = (1 - 1 / aspect) / 2;
+    gl.uniform2f(uInitialTextureOffset, 0, initialTextureOffset);
+}
+
+
+function drawSceneTexture() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sampleTextureFramebuffer);
+    gl.viewport(0, 0, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureScreenVertexPositionBuffer);
+    gl.vertexAttribPointer(aVertexPosition, textureScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureScreenTextureCoordBuffer);
+    gl.vertexAttribPointer(aTextureCoord, textureScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
+    gl.uniform1i(uSampler, 0);
+    gl.uniform1i(uIsBuffer, true);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, textureScreenIndexBuffer);
+    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
+    gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
+    gl.drawElements(gl.TRIANGLES, textureScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+    gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+
+function drawScene() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    mat4.ortho(pMatrix, -1, 1, -1, 1, .1, 100);
+    mat4.identity(mvMatrix);
+    mat4.translate(mvMatrix, mvMatrix, [0, 0, -1]);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenVertexPositionBuffer);
+    gl.vertexAttribPointer(aVertexPosition, mainScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenTextureCoordBuffer);
+    gl.vertexAttribPointer(aTextureCoord, mainScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
+    gl.uniform1i(uSampler, 1);
+    gl.uniform1i(uIsBuffer, false);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mainScreenIndexBuffer);
+    gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
+    gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
+    gl.drawElements(gl.TRIANGLES, mainScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 }
