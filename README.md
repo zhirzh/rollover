@@ -11,4 +11,4 @@ Add a rolling background to the website.
 - [ ] Limits
 - [x] Start at top
 - [x] Preserve image aspect
-- [ ] Shift viewpoint
+- [ ] Shift viewport origin

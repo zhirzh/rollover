@@ -1,7 +1,8 @@
 'use strict';
 
 var fps = 60;
-var initialOffset;
+var last = 0;
+var initialTextureOffset;
 var canvas;
 var gl;
 
@@ -10,7 +11,7 @@ var shaderProgram;
 var aTextureCoord;
 var aVertexPosition;
 var uBGAspect;
-var uInitialOffset;
+var uInitialTextureOffset;
 var uIsBuffer;
 var uMVMatrix;
 var uPMatrix;
@@ -27,30 +28,11 @@ var mainScreenVertexPositionBuffer;
 var mainScreenTextureCoordBuffer;
 var mainScreenIndexBuffer;
 
-var rttFramebuffer;
-var rttTexture;
+var sampleFramebuffer;
+var sampleTexture;
 
 var mvMatrix = mat4.create();
 var pMatrix = mat4.create();
-var mvMatrixStack = [];
-
-
-function mvPushMatrix() {
-    var copy = mat4.create();
-    mat4.set(mvMatrix, copy);
-    mvMatrixStack.push(copy);
-}
-
-function mvPopMatrix() {
-    if (mvMatrixStack.length == 0) {
-        throw 'Invalid popMatrix!';
-    }
-    mvMatrix = mvMatrixStack.pop();
-}
-
-function degToRad(degrees) {
-    return degrees * Math.PI / 180;
-}
 
 
 function getShader(gl, id) {
@@ -89,7 +71,6 @@ function getShader(gl, id) {
 }
 
 
-var last = 0;
 function render(HRTimestamp) {
     requestAnimationFrame(render);
 
@@ -104,9 +85,25 @@ function render(HRTimestamp) {
 }
 
 
+function resize() {
+    if (canvas.width === canvas.clientWidth && canvas.height === canvas.clientHeight) {
+        return;
+    }
+
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+    var aspect = (backgroundTexture.image.height / backgroundTexture.image.width) / (canvas.height / canvas.width);
+    gl.uniform1f(uBGAspect, aspect);
+
+    initialTextureOffset = (1 - 1 / aspect) / 2;
+    gl.uniform2f(uInitialTextureOffset, 0, initialTextureOffset);
+}
+
+
 function drawSceneTexture() {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-    gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sampleFramebuffer);
+    gl.viewport(0, 0, sampleFramebuffer.width, sampleFramebuffer.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 
@@ -126,7 +123,7 @@ function drawSceneTexture() {
     gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
     gl.drawElements(gl.TRIANGLES, textureScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+    gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.bindTexture(gl.TEXTURE_2D, null);
 }
@@ -148,7 +145,7 @@ function drawScene() {
     gl.vertexAttribPointer(aTextureCoord, mainScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
     gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+    gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
     gl.uniform1i(uSampler, 1);
     gl.uniform1i(uIsBuffer, false);
 
@@ -159,28 +156,10 @@ function drawScene() {
 }
 
 
-function resize() {
-    if (canvas.width === canvas.clientWidth && canvas.height === canvas.clientHeight) {
-        return;
-    }
-
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-
-    var aspect = (backgroundTexture.image.height / backgroundTexture.image.width) / (canvas.height / canvas.width);
-    gl.uniform1f(uBGAspect, aspect);
-
-    initialOffset = (1 - 1 / aspect) / 2;
-    gl.uniform2f(uInitialOffset, 0, initialOffset);
-    console.log(initialOffset)
-}
-
-
 function initWebGL(canvas) {
     gl = canvas.getContext('webgl');
 
     gl.clearColor(0, 0, 0, 1);
-    gl.enable(gl.DEPTH_TEST);
 }
 
 
@@ -206,7 +185,7 @@ function initProgram() {
 
     uBGAspect = gl.getUniformLocation(shaderProgram, 'uBGAspect');
     uIsBuffer = gl.getUniformLocation(shaderProgram, 'uIsBuffer');
-    uInitialOffset = gl.getUniformLocation(shaderProgram, 'uInitialOffset');
+    uInitialTextureOffset = gl.getUniformLocation(shaderProgram, 'uInitialTextureOffset');
     uMVMatrix = gl.getUniformLocation(shaderProgram, 'uMVMatrix');
     uPMatrix = gl.getUniformLocation(shaderProgram, 'uPMatrix');
     uSampler = gl.getUniformLocation(shaderProgram, 'uSampler');
@@ -218,12 +197,11 @@ function initbackgroundTexture() {
     backgroundTexture = gl.createTexture();
     backgroundTexture.image = new Image();
     backgroundTexture.image.src = 'moseshi.2.jpg';
-    // backgroundTexture.image.src = 'long.jpg';
+    backgroundTexture.image.src = 'long.jpg';
     backgroundTexture.image.addEventListener('load', function () {
         /* use TEXTURE0 for backgroundTexture */
         gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, backgroundTexture.image);
 
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -237,25 +215,24 @@ function initbackgroundTexture() {
 
 
 function initTextureFramebuffer() {
-    rttFramebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-    rttFramebuffer.width = 1024;
-    rttFramebuffer.height = 1024;
+    sampleFramebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sampleFramebuffer);
+    sampleFramebuffer.width = 1024;
+    sampleFramebuffer.height = 1024;
 
-    /* use TEXTURE1 for rttTexture */
-    rttTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+    /* use TEXTURE1 for sampleTexture */
+    sampleTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sampleFramebuffer.width, sampleFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    var sampleRenderbuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, sampleRenderbuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, sampleFramebuffer.width, sampleFramebuffer.height);
 
-    var renderbuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, rttFramebuffer.width, rttFramebuffer.height);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, rttTexture, 0);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sampleTexture, 0);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, sampleRenderbuffer);
 
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -362,9 +339,9 @@ function webGLStart() {
     var offset = 0;
     window.addEventListener('keydown', function(e) {
         if (e.key === 'ArrowDown') {
-            offset -= .001;
+            offset -= .01;
         } else if (e.key === 'ArrowUp') {
-            offset += .001;
+            offset += .01;
         }
         gl.uniform2f(uTextureOffset, 0, offset);
     });

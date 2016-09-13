@@ -33,13 +33,18 @@
     varying vec2 vTextureCoord;
 
     void main() {
+        vec4 XY;
+
         if (uIsBuffer) {
-            gl_Position = vec4(aVertexPosition * vec2(1, uBGAspect), 0, 1);
-            vTextureCoord = aTextureCoord;
+            // Appy corrct aspect
+            XY = vec4(aVertexPosition * vec2(1, uBGAspect), 0, 1);
         } else {
-            gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 0, 1);
-            vTextureCoord = aTextureCoord;
+            // Appy Model-View-Model matrix transformation
+            XY = uPMatrix * uMVMatrix * vec4(aVertexPosition, 0, 1);
         }
+
+        gl_Position = XY;
+        vTextureCoord = aTextureCoord;
     }
 </script>
 
@@ -47,40 +52,52 @@
     precision mediump float;
 
     uniform bool uIsBuffer;
-    uniform vec2 uInitialOffset;
     uniform sampler2D uSampler;
+    uniform vec2 uInitialTextureOffset;
     uniform vec2 uTextureOffset;
 
     varying vec2 vTextureCoord;
 
     void main() {
+        vec2 XY;
+
         if (uIsBuffer) {
-            gl_FragColor = texture2D(uSampler, vTextureCoord + uInitialOffset + uTextureOffset);
+            // Add initial and current offset
+            XY = vTextureCoord + uInitialTextureOffset + uTextureOffset;
         } else {
             vec2 multiplier = vec2(.08, 0);
-            vec2 edgeRecover = vec2(1.05, 1);
-
-            vec2 XY;
-            bvec2 isValid;
+            vec2 recover = vec2(1.09, 1);
+            vec2 originOffset = vec2(0, -1);
 
             XY = vTextureCoord;
+            float R;
+            bvec2 isValid;
 
             // Normalize components from range {0, 1} to {-1, 1}
             XY = (2. * XY) - 1.;
 
+            // Apply origin offset
+            XY += originOffset;
+            R = dot(XY, XY);
+            XY -= originOffset;
+
             // Calculate distortion
-            XY = XY * (1. - multiplier * dot(XY, XY)) * edgeRecover;
+            XY *= (1. - multiplier * R);
+
+            // Recover edges
+            XY *=  recover;
 
             // Filter valid regions
             isValid = lessThanEqual(abs(XY), vec2(1, 1));
             if (isValid.x && isValid.y) {
                 // De-normalize
                 XY = (XY + 1.) / 2.;
-                gl_FragColor = texture2D(uSampler, XY);
             } else {
                 discard;
             }
         }
+
+        gl_FragColor = texture2D(uSampler, XY);
     }
 </script>
 </html>
