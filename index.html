@@ -17,11 +17,11 @@
     </style>
 </head>
 <body onload="webGLStart();">
-    <canvas id="canvas" height="300" width="600"></canvas>
+    <canvas id="canvas"></canvas>
 </body>
 <script type="text/javascript" src="index.js"></script>
 
-<script id="shader-vs" type="x-shader/x-vertex">
+<script id="vertex-shader" type="x-shader/x-vertex">
     attribute vec2 aTextureCoord;
     attribute vec2 aVertexPosition;
 
@@ -43,10 +43,11 @@
     }
 </script>
 
-<script id="shader-fs" type="x-shader/x-fragment">
+<script id="fragment-shader" type="x-shader/x-fragment">
     precision mediump float;
 
     uniform bool uIsBuffer;
+    uniform vec2 uInitialOffset;
     uniform sampler2D uSampler;
     uniform vec2 uTextureOffset;
 
@@ -54,26 +55,21 @@
 
     void main() {
         if (uIsBuffer) {
-            vec2 XY = vTextureCoord + uTextureOffset;
-            gl_FragColor = texture2D(uSampler, XY);
+            gl_FragColor = texture2D(uSampler, vTextureCoord + uInitialOffset + uTextureOffset);
         } else {
-            float multiplier = .1;
-            float power = 2.;
+            vec2 multiplier = vec2(.08, 0);
+            vec2 edgeRecover = vec2(1.05, 1);
 
             vec2 XY;
-            vec2 A;
-            float L;
             bvec2 isValid;
 
             XY = vTextureCoord;
-            A = vec2(multiplier, 0);
 
             // Normalize components from range {0, 1} to {-1, 1}
             XY = (2. * XY) - 1.;
-            L = length(XY);
 
             // Calculate distortion
-            XY = XY * (1. - A * pow(L, power));
+            XY = XY * (1. - multiplier * dot(XY, XY)) * edgeRecover;
 
             // Filter valid regions
             isValid = lessThanEqual(abs(XY), vec2(1, 1));

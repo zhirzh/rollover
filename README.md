@@ -2,12 +2,13 @@
 
 Add a rolling background to the website.
 
-###ToDo
+### ToDo
 
 - [x] Basic controls (keyboard)
 - [x] Dynamic Canvas
 - [x] FPS control
-- [ ] Edge preservation
+- [x] Edge preservation
 - [ ] Limits
-- [ ] Start at top
-- [ ] Preserve image aspect
+- [x] Start at top
+- [x] Preserve image aspect
+- [ ] Shift viewpoint
