@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>TEST</title>
-    <script type="text/javascript" src="gl-matrix-2.3.2min.js"></script>
+    <script type="text/javascript" src="js/gl-matrix-2.3.2min.js"></script>
     <style type="text/css">
         * {
             margin: 0;
@@ -19,12 +19,12 @@
 <body>
     <canvas id="rollover-bg"></canvas>
 </body>
-<script type="text/javascript" src="index.js"></script>
+<script type="text/javascript" src="roll-over.js"></script>
 <script type="text/javascript">
     document.body.onload = function init() {
-        Rollover.init({
+        RollOver.init({
             canvas: 'rollover-bg',
-            mode: Rollover.POLYNOMIAL,
+            mode: RollOver.modes.POLYNOMIAL,
             factor: [2, 2],
             multiplier: [0, 0.2],
             originOffset: [0.5, 0],
@@ -32,6 +32,7 @@
         });
     };
 </script>
+
 <script id="vertex-shader" type="x-shader/x-vertex">
     attribute vec2 aTextureCoord;
     attribute vec2 aVertexPosition;
