@@ -36,37 +36,34 @@ let mainScreenTextureCoordBuffer;
 let mainScreenIndexBuffer;
 
 
-function getShader(gl, id) {
-  let shaderScript = document.getElementById(id);
-  if (!shaderScript) {
-    return;
-  }
+function getShader(id) {
+  return fetch(`${id}.glsl`).
+    then((res) => res.text()).
+    then((script) => {
+      let shader;
+      switch (id) {
+        case 'fragment-shader':
+          shader = gl.createShader(gl.FRAGMENT_SHADER);
+          break;
 
-  let str = shaderScript.innerHTML;
+        case 'vertex-shader':
+          shader = gl.createShader(gl.VERTEX_SHADER);
+          break;
 
-  let shader;
-  switch (shaderScript.type) {
-    case 'x-shader/x-fragment':
-      shader = gl.createShader(gl.FRAGMENT_SHADER);
-      break;
+        default:
+          return;
+      }
 
-    case 'x-shader/x-vertex':
-      shader = gl.createShader(gl.VERTEX_SHADER);
-      break;
+      gl.shaderSource(shader, script);
+      gl.compileShader(shader);
 
-    default:
-      return;
-  }
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        return;
+      }
 
-  gl.shaderSource(shader, str);
-  gl.compileShader(shader);
-
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return;
-  }
-
-  return shader;
+      return shader;
+    });
 }
 
 
@@ -99,22 +96,26 @@ function initWebGL() {
 
 
 function initProgram() {
-  let fragmentShader = getShader(gl, 'fragment-shader');
-  let vertexShader = getShader(gl, 'vertex-shader');
+  Promise.all([
+    getShader('fragment-shader'),
+    getShader('vertex-shader')
+  ]).
+    then(([fragmentShader, vertexShader]) => {
+      program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
 
-  program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(program));
+        return;
+      }
 
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return;
-  }
+      gl.useProgram(program);
 
-  gl.useProgram(program);
-
-  initShaderParams();
+      initShaderParams();
+    }).
+    catch((e) => console.error(e));
 }
 
 
@@ -129,7 +130,6 @@ function initShaderParams() {
   uInitialTextureOffset = gl.getUniformLocation(program, 'uInitialTextureOffset');
   uSampler = gl.getUniformLocation(program, 'uSampler');
   uTextureOffset = gl.getUniformLocation(program, 'uTextureOffset');
-
 
   gl.uniform1i(gl.getUniformLocation(program, 'uMode'), config.mode);
 
