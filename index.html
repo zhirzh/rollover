@@ -9,18 +9,29 @@
             padding: 0;
             box-sizing: border-box;
         }
-        canvas {
+        #rollover-bg {
             height: 100vh;
             width: 100vw;
             display: block;
         }
     </style>
 </head>
-<body onload="RollOver.init();">
-    <canvas id="canvas"></canvas>
+<body>
+    <canvas id="rollover-bg"></canvas>
 </body>
 <script type="text/javascript" src="index.js"></script>
-
+<script type="text/javascript">
+    document.body.onload = function init() {
+        Rollover.init({
+            canvas: 'rollover-bg',
+            mode: Rollover.POLYNOMIAL,
+            factor: [2, 2],
+            multiplier: [0, 0.2],
+            originOffset: [0.5, 0],
+            recover: [1, 1.2],
+        });
+    };
+</script>
 <script id="vertex-shader" type="x-shader/x-vertex">
     attribute vec2 aTextureCoord;
     attribute vec2 aVertexPosition;
@@ -56,14 +67,20 @@
     uniform vec2 uInitialTextureOffset;
     uniform vec2 uTextureOffset;
 
+
+    uniform int uMode;
+
+    uniform vec2 uFactor;
+    uniform vec2 uMultiplier;
+    uniform vec2 uOriginOffset;
+    uniform vec2 uRecover;
+
     varying vec2 vTextureCoord;
 
-    vec2 arctanDistortion(vec2 XY, float factor, vec2 multiplier);
-    vec2 arctan2Distortion(vec2 XY, vec2 factor, vec2 multiplier);
+    vec2 arctanDistortion(vec2 XY, vec2 factor, vec2 multiplier);
     vec2 linearDistortion(vec2 XY, vec2 multiplier);
     vec2 parabolicDistortion(vec2 XY, vec2 multiplier);
-    vec2 polynomialDistortion(vec2 XY, float factor, vec2 multiplier);
-    vec2 polynomial2Distortion(vec2 XY, vec2 factor, vec2 multiplier);
+    vec2 polynomialDistortion(vec2 XY, vec2 factor, vec2 multiplier);
 
     void main() {
         vec2 XY;
@@ -72,11 +89,6 @@
             // Add initial and current offset
             XY = vTextureCoord + uInitialTextureOffset + uTextureOffset;
         } else {
-            vec2 multiplier = vec2(0, 0);
-            vec2 recover = vec2(1, 1);
-            float factor = .7; // can also be vec2
-            vec2 originOffset = vec2(0, 0);
-
             XY = vTextureCoord;
             float R;
             bvec2 isValid;
@@ -85,21 +97,24 @@
             XY = (2. * XY) - 1.;
 
             /*Shift offset*/
-            XY += originOffset;
+            XY += uOriginOffset;
 
             /*Calculate distortion*/
-            // XY = arctanDistortion(XY, factor, multiplier);
-            // XY = arctan2Distortion(XY, factor, multiplier);  // typeof factor === vec2
-            // XY = linearDistortion(XY, multiplier);
-            XY = parabolicDistortion(XY, multiplier);
-            // XY = polynomialDistortion(XY, factor, multiplier);
-            // XY = polynomial2Distortion(XY, factor, multiplier);  // typeof factor === vec2
+            if (uMode == 1) {
+                XY = arctanDistortion(XY, uFactor, uMultiplier);
+            } else if (uMode == 2) {
+                XY = linearDistortion(XY, uMultiplier);
+            } else if (uMode == 3) {
+                XY = parabolicDistortion(XY, uMultiplier);
+            } else if (uMode == 4) {
+                XY = polynomialDistortion(XY, uFactor, uMultiplier);
+            }
 
             /*Reset origin*/
-            XY -= originOffset;
+            XY -= uOriginOffset;
 
             /*Recover edges*/
-            XY *= recover;
+            XY *= uRecover;
 
             /*Filter valid regions*/
             isValid = lessThanEqual(abs(XY), vec2(1, 1));
@@ -114,32 +129,19 @@
         gl_FragColor = texture2D(uSampler, XY);
     }
 
-    vec2 arctanDistortion(vec2 XY, float factor, vec2 multiplier) {
-        if (factor == 0.) {
-            return XY * (1. + multiplier);
-        }
-
-        float t = factor * length(XY);
-        float R = atan(t) / t;
-        return XY * (1. + multiplier) * R;
-    }
-
-    vec2 arctan2Distortion(vec2 XY, vec2 factor, vec2 multiplier) {
-        vec2 t = factor * length(XY);
+    vec2 arctanDistortion(vec2 XY, vec2 factor, vec2 multiplier) {
+        vec2 t = length(XY) * factor;
         vec2 R;
 
-        if (factor.x == 0. || factor.y == 0.) {
-            if (factor.x == 0.) {
-                R = vec2(1, atan(t.y) / t.y);
-            }
-            if (factor.y == 0.) {
-                R = vec2(atan(t.x) / t.x, 1);
-            }
+        if (factor.x == 0.) {
+            R = vec2(1, atan(t.y) / t.y);
+        } else if (factor.y == 0.) {
+            R = vec2(atan(t.x) / t.x, 1);
         } else {
             R = atan(t) / t;
         }
 
-        return XY * (1. + multiplier) * R;
+        return XY * (1. - multiplier * (1. - R));
     }
 
     vec2 linearDistortion(vec2 XY, vec2 multiplier) {
@@ -152,12 +154,7 @@
         return XY * (1. - multiplier * R);
     }
 
-    vec2 polynomialDistortion(vec2 XY, float factor, vec2 multiplier) {
-        float R = pow(length(XY), factor);
-        return XY * (1. - multiplier * R);
-    }
-
-    vec2 polynomial2Distortion(vec2 XY, vec2 factor, vec2 multiplier) {
+    vec2 polynomialDistortion(vec2 XY, vec2 factor, vec2 multiplier) {
         vec2 R = pow(vec2(length(XY), length(XY)), factor);
         return XY * (1. - multiplier * R);
     }

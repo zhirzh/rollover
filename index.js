@@ -1,10 +1,20 @@
-const RollOver = (function RollOver() {
+const Rollover = (function Rollover() {
     'use strict';
 
     var fps = 60;
     var last = 0;
     var canvas;
     var gl;
+    var config;
+
+    var modes = {
+        ARCTAN: 1,
+        LINEAR: 2,
+        PARABOLIC: 3,
+        POLYNOMIAL: 4,
+    };
+
+    var program;
 
     var aTextureCoord;
     var aVertexPosition;
@@ -65,9 +75,10 @@ const RollOver = (function RollOver() {
     }
 
 
-    function init() {
-        canvas = document.getElementById('canvas');
-        initWebGL(canvas);
+    function init(_config) {
+        config =  _config;
+
+        initWebGL();
 
         initProgram();
 
@@ -85,7 +96,8 @@ const RollOver = (function RollOver() {
     }
 
 
-    function initWebGL(canvas) {
+    function initWebGL() {
+        canvas = document.getElementById(config.canvas);
         gl = canvas.getContext('webgl');
         gl.clearColor(0, 0, 0, 1);
     }
@@ -95,7 +107,7 @@ const RollOver = (function RollOver() {
         var fragmentShader = getShader(gl, 'fragment-shader');
         var vertexShader = getShader(gl, 'vertex-shader');
 
-        var program = gl.createProgram();
+        program = gl.createProgram();
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
         gl.linkProgram(program);
@@ -107,6 +119,11 @@ const RollOver = (function RollOver() {
 
         gl.useProgram(program);
 
+        initShaderParams();
+    }
+
+
+    function initShaderParams() {
         aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
         aTextureCoord = gl.getAttribLocation(program, 'aTextureCoord');
         gl.enableVertexAttribArray(aVertexPosition);
@@ -119,13 +136,21 @@ const RollOver = (function RollOver() {
         uPMatrix = gl.getUniformLocation(program, 'uPMatrix');
         uSampler = gl.getUniformLocation(program, 'uSampler');
         uTextureOffset = gl.getUniformLocation(program, 'uTextureOffset');
+
+
+        gl.uniform1i(gl.getUniformLocation(program, 'uMode'), config.mode);
+
+        gl.uniform2fv(gl.getUniformLocation(program, 'uFactor'), config.factor);
+        gl.uniform2fv(gl.getUniformLocation(program, 'uMultiplier'), config.multiplier);
+        gl.uniform2fv(gl.getUniformLocation(program, 'uOriginOffset'), config.originOffset);
+        gl.uniform2fv(gl.getUniformLocation(program, 'uRecover'), config.recover);
     }
 
 
     function initBackgroundTexture() {
         backgroundImage = new Image();
         backgroundImage.src = 'long.v.jpg';
-        // backgroundImage.src = 'long.h.jpg';
+        backgroundImage.src = 'long.h.jpg';
         backgroundImage.addEventListener('load', function () {
             /* use TEXTURE0 for backgroundTexture */
             backgroundTexture = gl.createTexture();
@@ -328,7 +353,6 @@ const RollOver = (function RollOver() {
 
         gl.uniform2f(uBGAspect, aspect.x, aspect.y);
         gl.uniform2f(uInitialTextureOffset, initialTextureOffset.x, initialTextureOffset.y);
-        console.log(aspect, initialTextureOffset)
     }
 
 
@@ -403,7 +427,7 @@ const RollOver = (function RollOver() {
     }
 
 
-    return {
+    return Object.assign({
         init: init,
-    }
+    }, modes);
 })();
