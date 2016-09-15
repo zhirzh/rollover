@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>TEST</title>
-    <script type="text/javascript" src="js/gl-matrix-2.3.2min.js"></script>
     <style type="text/css">
         * {
             margin: 0;
@@ -39,8 +38,6 @@
 
     uniform bool uIsBuffer;
     uniform vec2 uBGAspect;
-    uniform mat4 uMVMatrix;
-    uniform mat4 uPMatrix;
 
     varying vec2 vTextureCoord;
 
@@ -51,8 +48,7 @@
             // Appy corrct aspect
             XY = vec4(aVertexPosition * uBGAspect, 0, 1);
         } else {
-            // Appy Model-View-Model matrix transformation
-            XY = uPMatrix * uMVMatrix * vec4(aVertexPosition, 0, 1);
+            XY = vec4(aVertexPosition, 0, 1);
         }
 
         gl_Position = XY;

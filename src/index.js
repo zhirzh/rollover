@@ -18,8 +18,6 @@ let aVertexPosition;
 let uBGAspect;
 let uInitialTextureOffset;
 let uIsBuffer;
-let uMVMatrix;
-let uPMatrix;
 let uSampler;
 let uTextureOffset;
 
@@ -129,8 +127,6 @@ function initShaderParams() {
   uBGAspect = gl.getUniformLocation(program, 'uBGAspect');
   uIsBuffer = gl.getUniformLocation(program, 'uIsBuffer');
   uInitialTextureOffset = gl.getUniformLocation(program, 'uInitialTextureOffset');
-  uMVMatrix = gl.getUniformLocation(program, 'uMVMatrix');
-  uPMatrix = gl.getUniformLocation(program, 'uPMatrix');
   uSampler = gl.getUniformLocation(program, 'uSampler');
   uTextureOffset = gl.getUniformLocation(program, 'uTextureOffset');
 
@@ -286,19 +282,6 @@ function initMainScreen() {
   ]), gl.STATIC_DRAW);
   mainScreenIndexBuffer.itemSize = 1;
   mainScreenIndexBuffer.numItems = 6;
-
-  initMVPMatrices();
-}
-
-
-function initMVPMatrices() {
-  let mvMatrix = mat4.create();
-  mat4.fromTranslation(mvMatrix, [0, 0, -1]);
-  gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix);
-
-  let pMatrix = mat4.create();
-  mat4.ortho(pMatrix, -1, 1, -1, 1, .1, 100);
-  gl.uniformMatrix4fv(uPMatrix, false, pMatrix);
 }
 
 
