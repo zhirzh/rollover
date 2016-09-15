@@ -81,14 +81,30 @@ function webGLStart() {
     initSamplingScreen();
     initMainScreen();
 
-    var offset = 0;
+    var offset = {
+        x: 0,
+        y: 0,
+    };
     window.addEventListener('keydown', function(e) {
-        if (e.key === 'ArrowDown') {
-            offset -= .002;
-        } else if (e.key === 'ArrowUp') {
-            offset += .002;
+        switch (e.key) {
+            case 'ArrowUp':
+                offset.y += .002;
+                break;
+
+            case 'ArrowDown':
+                offset.y -= .002;
+                break;
+
+            case 'ArrowLeft':
+                offset.x -= .002;
+                break;
+
+            case 'ArrowRight':
+                offset.x += .002;
+                break;
         }
-        gl.uniform2f(uTextureOffset, 0, offset);
+
+        gl.uniform2f(uTextureOffset, offset.x, offset.y);
     });
     backgroundImage.addEventListener('load', function() {
         requestAnimationFrame(render);
@@ -136,7 +152,8 @@ function initProgram() {
 
 function initBackgroundTexture() {
     backgroundImage = new Image();
-    backgroundImage.src = 'moseshi.jpg';
+    backgroundImage.src = 'long.v.jpg';
+    // backgroundImage.src = 'long.h.jpg';
     backgroundImage.addEventListener('load', function () {
         /* use TEXTURE0 for backgroundTexture */
         backgroundTexture = gl.createTexture();
@@ -313,11 +330,34 @@ function resize() {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
 
-    var aspect = (canvas.width / canvas.height) / (backgroundImage.width / backgroundImage.height);
-    gl.uniform1f(uBGAspect, aspect);
+    var widthRatio = backgroundImage.width / canvas.width;
+    var heightRatio = backgroundImage.height / canvas.height;
 
-    initialTextureOffset = (1 - 1 / aspect) / 2;
-    gl.uniform2f(uInitialTextureOffset, 0, initialTextureOffset);
+    var aspect;
+
+    var backgroundImageAspect = backgroundImage.width / backgroundImage.height;
+
+    initialTextureOffset = {
+        x: 0,
+        y: 0,
+    };
+
+    aspect = {
+        x: 1,
+        y: 1,
+    };
+
+    if (backgroundImageAspect > 1) {
+        aspect.x = widthRatio / heightRatio;
+        initialTextureOffset.x = -0.5 * (1 - 1 / aspect.x);
+    } else {
+        aspect.y = heightRatio / widthRatio;
+        initialTextureOffset.y = 0.5 * (1 - 1 / aspect.y);
+    }
+
+    gl.uniform2f(uBGAspect, aspect.x, aspect.y);
+    gl.uniform2f(uInitialTextureOffset, initialTextureOffset.x, initialTextureOffset.y);
+    console.log(aspect, initialTextureOffset)
 }
 
 
