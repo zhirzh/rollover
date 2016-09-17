@@ -29,6 +29,8 @@
     uniform float uBGAspect;
     uniform mat4 uMVMatrix;
     uniform mat4 uPMatrix;
+    uniform vec2 uInitialTextureOffset;
+    uniform vec2 uTextureOffset;
 
     varying vec2 vTextureCoord;
 
@@ -37,7 +39,7 @@
 
         if (uIsBuffer) {
             // Appy corrct aspect
-            XY = vec4(aVertexPosition * vec2(1, uBGAspect), 0, 1);
+            XY = vec4((aVertexPosition + uTextureOffset) * vec2(1, 1), 0, 1);
         } else {
             // Appy Model-View-Model matrix transformation
             XY = uPMatrix * uMVMatrix * vec4(aVertexPosition, 0, 1);
@@ -53,8 +55,6 @@
 
     uniform bool uIsBuffer;
     uniform sampler2D uSampler;
-    uniform vec2 uInitialTextureOffset;
-    uniform vec2 uTextureOffset;
 
     varying vec2 vTextureCoord;
 
@@ -70,10 +70,10 @@
 
         if (uIsBuffer) {
             // Add initial and current offset
-            XY = vTextureCoord + uInitialTextureOffset + uTextureOffset;
+            XY = vTextureCoord;
         } else {
-            vec2 multiplier = vec2(.07, 0);
-            vec2 recover = vec2(1.05, 1);
+            vec2 multiplier = vec2(.0, 0);
+            vec2 recover = vec2(1.0, 1);
             float factor = .7; // can also be vec2
             vec2 originOffset = vec2(0, -.7);
 
