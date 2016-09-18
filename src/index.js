@@ -1,3 +1,7 @@
+import 'babel-polyfill';
+import 'whatwg-fetch';
+
+
 const fps = 60;
 let last = 0;
 let canvas;
@@ -12,6 +16,9 @@ const modes = {
 };
 
 let program;
+
+let textures;
+let tileVertexPositionBuffers;
 
 let sampleTexture;
 let sampleTextureFramebuffer;
@@ -104,44 +111,35 @@ function initProgram({ vertexShaderID, fragmentShaderID, attributes, uniforms })
 }
 
 
-let images = [];
-let textures = [];
-let tileVertexPositionBuffers = [];
-function initBackgroundTexture() {
-  const imgSrcs = [
-    'img/1.jpg',
-    'img/2.jpg',
-    'img/3.jpg',
-    'img/4.jpg',
-    'img/5.jpg',
-  ];
-
-  const promises = imgSrcs.map(imgSrc => new Promise((res) => {
+function loadTile(imgSrc) {
+  return new Promise((res) => {
     const img = new Image();
     img.src = imgSrc;
     img.onload = () => res(img);
-  }));
+  });
+}
 
-  return Promise.all(promises)
-    .then((imgs) => {
-      images = imgs;
-    })
-    .then(() => {
-      textures = images.map((img) => {
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 
-        gl.bindTexture(gl.TEXTURE_2D, null);
+function initTileTextures(images) {
+  textures = images.map((img) => {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 
-        return texture;
-      });
-    });
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    return texture;
+  });
+}
+
+
+function initBackgroundTexture(imgSrcs) {
+  return Promise.all(imgSrcs.map(loadTile)).then(initTileTextures);
 }
 
 
@@ -439,7 +437,15 @@ function init(_config) {
     ],
   });
 
-  initBackgroundTexture().then(initSamplingScreen);
+  const imgSrcs = [
+    'img/1.jpg',
+    'img/2.jpg',
+    'img/3.jpg',
+    'img/4.jpg',
+    'img/5.jpg',
+  ];
+
+  initBackgroundTexture(imgSrcs).then(initSamplingScreen);
   initSampleTexture();
 
   initSamplingScreen();

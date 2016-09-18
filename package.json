@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "webpack -d --watch",
-    "build": "webpack -p"
+    "build": "webpack -p --progress"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,8 @@
     "babel-polyfill": "^6.13.0",
     "babel-preset-latest": "^6.14.0",
     "babel-register": "^6.14.0",
-    "webpack": "^1.13.2"
+    "webpack": "^1.13.2",
+    "whatwg-fetch": "^1.0.0"
   },
   "devDependencies": {
     "eslint": "^3.5.0",
