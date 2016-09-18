@@ -55,54 +55,19 @@ function getShader(id) {
 }
 
 
-function init(_config) {
-  config = _config;
-
-  initWebGL();
-
-  initProgram({
-    vertexShader: 'vertex-shader',
-    fragmentShader: 'fragment-shader',
-    attributes: [
-      'aTextureCoord',
-      'aVertexPosition',
-    ],
-    uniforms: [
-      'uBGAspect',
-      'uFactor',
-      'uFactor',
-      'uInitialTextureOffset',
-      'uIsBuffer',
-      'uMode',
-      'uMultiplier',
-      'uMultiplier',
-      'uOriginOffset',
-      'uOriginOffset',
-      'uRecover',
-      'uRecover',
-      'uSampler',
-      'uTextureOffset',
-    ],
-  });
-
-  initBackgroundTexture().then(initSamplingScreen);
-  initSampleTexture();
-
-  initSamplingScreen();
-  initMainScreen();
-
-  initScrolling();
-
-  setTimeout(() => {
-    requestAnimationFrame(render);
-  }, 1000);
-}
-
-
 function initWebGL() {
   canvas = document.getElementById(config.canvas);
   gl = canvas.getContext('webgl');
   gl.clearColor(0, 0, 0, 1);
+}
+
+
+function initUniforms() {
+  gl.uniform1i(program.uMode, config.mode);
+  gl.uniform2fv(program.uFactor, config.factor);
+  gl.uniform2fv(program.uMultiplier, config.multiplier);
+  gl.uniform2fv(program.uOriginOffset, config.originOffset);
+  gl.uniform2fv(program.uRecover, config.recover);
 }
 
 
@@ -136,15 +101,6 @@ function initProgram({ vertexShaderID, fragmentShaderID, attributes, uniforms })
       initUniforms();
     })
     .catch(e => console.error(e));
-}
-
-
-function initUniforms() {
-  gl.uniform1i(program.uMode, config.mode);
-  gl.uniform2fv(program.uFactor, config.factor);
-  gl.uniform2fv(program.uMultiplier, config.multiplier);
-  gl.uniform2fv(program.uOriginOffset, config.originOffset);
-  gl.uniform2fv(program.uRecover, config.recover);
 }
 
 
@@ -189,24 +145,6 @@ function initBackgroundTexture() {
 }
 
 
-function initSampleTexture() {
-  initSampleTextureFramebuffer();
-
-  /* use TEXTURE1 for sampleTexture */
-  sampleTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-  initSampleTextureRenderbuffer();
-
-  gl.bindTexture(gl.TEXTURE_2D, null);
-}
-
-
 function initSampleTextureFramebuffer() {
   sampleTextureFramebuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, sampleTextureFramebuffer);
@@ -227,6 +165,24 @@ function initSampleTextureRenderbuffer() {
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+}
+
+
+function initSampleTexture() {
+  initSampleTextureFramebuffer();
+
+  /* use TEXTURE1 for sampleTexture */
+  sampleTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+  initSampleTextureRenderbuffer();
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 
@@ -326,20 +282,6 @@ function initMainScreen() {
 }
 
 
-function render(HRTimestamp) {
-  requestAnimationFrame(render);
-
-  if (HRTimestamp - last < 1000 / fps) {
-    return;
-  }
-  last = HRTimestamp;
-
-  resize();
-  drawSamplingScreen();
-  drawMainScreen();
-}
-
-
 function resize() {
   if (canvas.width === canvas.clientWidth && canvas.height === canvas.clientHeight) {
     return;
@@ -421,6 +363,20 @@ function drawMainScreen() {
 }
 
 
+function render(HRTimestamp) {
+  requestAnimationFrame(render);
+
+  if (HRTimestamp - last < 1000 / fps) {
+    return;
+  }
+  last = HRTimestamp;
+
+  resize();
+  drawSamplingScreen();
+  drawMainScreen();
+}
+
+
 function initScrolling() {
   const offset = {
     x: 0,
@@ -451,6 +407,51 @@ function initScrolling() {
     gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
   });
 }
+
+
+function init(_config) {
+  config = _config;
+
+  initWebGL();
+
+  initProgram({
+    vertexShaderID: 'vertex-shader',
+    fragmentShaderID: 'fragment-shader',
+    attributes: [
+      'aTextureCoord',
+      'aVertexPosition',
+    ],
+    uniforms: [
+      'uBGAspect',
+      'uFactor',
+      'uFactor',
+      'uInitialTextureOffset',
+      'uIsBuffer',
+      'uMode',
+      'uMultiplier',
+      'uMultiplier',
+      'uOriginOffset',
+      'uOriginOffset',
+      'uRecover',
+      'uRecover',
+      'uSampler',
+      'uTextureOffset',
+    ],
+  });
+
+  initBackgroundTexture().then(initSamplingScreen);
+  initSampleTexture();
+
+  initSamplingScreen();
+  initMainScreen();
+
+  initScrolling();
+
+  setTimeout(() => {
+    requestAnimationFrame(render);
+  }, 1000);
+}
+
 
 export {
   init,
