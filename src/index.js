@@ -1,10 +1,10 @@
-let fps = 60;
+const fps = 60;
 let last = 0;
 let canvas;
 let gl;
 let config;
 
-let modes = {
+const modes = {
   ARCTAN: 1,
   LINEAR: 2,
   PARABOLIC: 3,
@@ -13,13 +13,9 @@ let modes = {
 
 let program;
 
-let backgroundTexture;
-let backgroundImage;
-
 let sampleTexture;
 let sampleTextureFramebuffer;
 
-let samplingScreenVertexPositionBuffer;
 let samplingScreenTextureCoordBuffer;
 let samplingScreenIndexBuffer;
 
@@ -29,9 +25,9 @@ let mainScreenIndexBuffer;
 
 
 function getShader(id) {
-  return fetch(`${id}.glsl`).
-    then((res) => res.text()).
-    then((script) => {
+  return fetch(`${id}.glsl`)
+    .then(res => res.text())
+    .then((script) => {
       let shader;
       switch (id) {
         case 'fragment-shader':
@@ -43,7 +39,7 @@ function getShader(id) {
           break;
 
         default:
-          return;
+          return null;
       }
 
       gl.shaderSource(shader, script);
@@ -51,7 +47,7 @@ function getShader(id) {
 
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         console.error(gl.getShaderInfoLog(shader));
-        return;
+        return null;
       }
 
       return shader;
@@ -60,7 +56,7 @@ function getShader(id) {
 
 
 function init(_config) {
-  config =  _config;
+  config = _config;
 
   initWebGL();
 
@@ -69,7 +65,7 @@ function init(_config) {
     fragmentShader: 'fragment-shader',
     attributes: [
       'aTextureCoord',
-      'aVertexPosition'
+      'aVertexPosition',
     ],
     uniforms: [
       'uBGAspect',
@@ -97,7 +93,7 @@ function init(_config) {
 
   initScrolling();
 
-  setTimeout(function() {
+  setTimeout(() => {
     requestAnimationFrame(render);
   }, 1000);
 }
@@ -110,12 +106,12 @@ function initWebGL() {
 }
 
 
-function initProgram({ vertexShader, fragmentShader, attributes, uniforms }) {
+function initProgram({ vertexShaderID, fragmentShaderID, attributes, uniforms }) {
   Promise.all([
-    getShader(vertexShader),
-    getShader(fragmentShader),
-  ]).
-    then(([fragmentShader, vertexShader]) => {
+    getShader(vertexShaderID),
+    getShader(fragmentShaderID),
+  ])
+    .then(([fragmentShader, vertexShader]) => {
       program = gl.createProgram();
       gl.attachShader(program, vertexShader);
       gl.attachShader(program, fragmentShader);
@@ -138,8 +134,8 @@ function initProgram({ vertexShader, fragmentShader, attributes, uniforms }) {
       });
 
       initUniforms();
-    }).
-    catch((e) => console.error(e));
+    })
+    .catch(e => console.error(e));
 }
 
 
@@ -152,11 +148,11 @@ function initUniforms() {
 }
 
 
-var images = [];
-var textures = [];
-var tileVertexPositionBuffers = [];
+let images = [];
+let textures = [];
+let tileVertexPositionBuffers = [];
 function initBackgroundTexture() {
-  var imgSrcs = [
+  const imgSrcs = [
     'img/1.jpg',
     'img/2.jpg',
     'img/3.jpg',
@@ -164,21 +160,19 @@ function initBackgroundTexture() {
     'img/5.jpg',
   ];
 
-    var promises = imgSrcs.map((imgSrc) => {
-      return new Promise((res) => {
-        var img = new Image();
-        img.src = imgSrc;
-        img.onload = () => res(img);
-      })
-    })
+  const promises = imgSrcs.map(imgSrc => new Promise((res) => {
+    const img = new Image();
+    img.src = imgSrc;
+    img.onload = () => res(img);
+  }));
 
-  return Promise.all(promises).
-    then((imgs) => {
+  return Promise.all(promises)
+    .then((imgs) => {
       images = imgs;
-    }).
-    then(() => {
+    })
+    .then(() => {
       textures = images.map((img) => {
-        var texture = gl.createTexture();
+        const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -226,7 +220,7 @@ function initSampleTextureRenderbuffer() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, sampleTextureFramebuffer);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sampleTexture, 0);
 
-  let sampleTextureRenderbuffer = gl.createRenderbuffer();
+  const sampleTextureRenderbuffer = gl.createRenderbuffer();
   gl.bindRenderbuffer(gl.RENDERBUFFER, sampleTextureRenderbuffer);
   gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height);
   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, sampleTextureRenderbuffer);
@@ -237,53 +231,60 @@ function initSampleTextureRenderbuffer() {
 
 
 function initSamplingScreen() {
-    var x1, y1, x2, y2;
-    tileVertexPositionBuffers = textures.map((texture, idx) => {
-        var buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        x1 = -1;
-        y1 = -1 * (1 + idx * 2);
-        x2 = x1 + 2;
-        y2 = y1 + 2;
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            x1, y1,
-            x2, y1,
-            x2, y2,
-            x1, y2,
-        ]), gl.STATIC_DRAW);
-        buffer.itemSize = 2;
-        buffer.numItems = 4;
-
-        return buffer;
-    });
-
-    samplingScreenTextureCoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, samplingScreenTextureCoordBuffer);
-    x1 = 0;
-    y1 = 0;
-    x2 = x1 + 1;
-    y2 = y1 + 1;
+  let x1;
+  let y1;
+  let x2;
+  let y2;
+  tileVertexPositionBuffers = textures.map((texture, idx) => {
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    x1 = -1;
+    y1 = -1 * (1 + (2 * idx));
+    x2 = x1 + 2;
+    y2 = y1 + 2;
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
       x1, y1,
       x2, y1,
       x2, y2,
       x1, y2,
     ]), gl.STATIC_DRAW);
-    samplingScreenTextureCoordBuffer.itemSize = 2;
-    samplingScreenTextureCoordBuffer.numItems = 4;
+    buffer.itemSize = 2;
+    buffer.numItems = 4;
 
-    samplingScreenIndexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, samplingScreenIndexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([
-        0, 1, 2,    0, 2, 3,
-    ]), gl.STATIC_DRAW);
-    samplingScreenIndexBuffer.itemSize = 1;
-    samplingScreenIndexBuffer.numItems = 6;
+    return buffer;
+  });
+
+  samplingScreenTextureCoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, samplingScreenTextureCoordBuffer);
+  x1 = 0;
+  y1 = 0;
+  x2 = x1 + 1;
+  y2 = y1 + 1;
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    x1, y1,
+    x2, y1,
+    x2, y2,
+    x1, y2,
+  ]), gl.STATIC_DRAW);
+  samplingScreenTextureCoordBuffer.itemSize = 2;
+  samplingScreenTextureCoordBuffer.numItems = 4;
+
+  samplingScreenIndexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, samplingScreenIndexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([
+    0, 1, 2,
+    0, 2, 3,
+  ]), gl.STATIC_DRAW);
+  samplingScreenIndexBuffer.itemSize = 1;
+  samplingScreenIndexBuffer.numItems = 6;
 }
 
 
 function initMainScreen() {
-  let x1, y1, x2, y2;
+  let x1;
+  let y1;
+  let x2;
+  let y2;
   mainScreenVertexPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenVertexPositionBuffer);
   x1 = -1;
@@ -317,7 +318,8 @@ function initMainScreen() {
   mainScreenIndexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mainScreenIndexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([
-    0, 1, 2,  0, 2, 3,
+    0, 1, 2,
+    0, 2, 3,
   ]), gl.STATIC_DRAW);
   mainScreenIndexBuffer.itemSize = 1;
   mainScreenIndexBuffer.numItems = 6;
@@ -346,28 +348,28 @@ function resize() {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 
-  let widthRatio = 1080 / canvas.width;
-  let heightRatio = (7000/5) / canvas.height;
+  const widthRatio = 1080 / canvas.width;
+  const heightRatio = (7000 / 5) / canvas.height;
 
 
-  let backgroundImageAspect = 1080 / (7000/5);
+  const backgroundImageAspect = 1080 / (7000 / 5);
 
-  let initialTextureOffset = {
+  const initialTextureOffset = {
     x: 0,
     y: 0,
   };
 
-  let aspect = {
+  const aspect = {
     x: 1,
     y: 1,
   };
 
   if (backgroundImageAspect > 1) {
     aspect.x = widthRatio / heightRatio;
-    initialTextureOffset.x = -0.5 * (1 - 1 / aspect.x);
+    initialTextureOffset.x = -0.5 * (1 - (1 / aspect.x));
   } else {
     aspect.y = heightRatio / widthRatio;
-    initialTextureOffset.y = 0.5 * (1 - 1 / aspect.y);
+    initialTextureOffset.y = 0.5 * (1 - (1 / aspect.y));
   }
 
   gl.uniform2f(program.uBGAspect, aspect.x, aspect.y);
@@ -376,27 +378,27 @@ function resize() {
 
 
 function drawSamplingScreen() {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, sampleTextureFramebuffer);
-    gl.viewport(0, 0, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.uniform1i(program.uIsBuffer, true);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, sampleTextureFramebuffer);
+  gl.viewport(0, 0, sampleTextureFramebuffer.width, sampleTextureFramebuffer.height);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform1i(program.uIsBuffer, true);
 
-    tileVertexPositionBuffers.forEach((tileVertexPositionBuffer, idx) => {
-        gl.bindBuffer(gl.ARRAY_BUFFER, tileVertexPositionBuffer);
-        gl.vertexAttribPointer(program.aVertexPosition, tileVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+  tileVertexPositionBuffers.forEach((tileVertexPositionBuffer, idx) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, tileVertexPositionBuffer);
+    gl.vertexAttribPointer(program.aVertexPosition, tileVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, samplingScreenTextureCoordBuffer);
-        gl.vertexAttribPointer(program.aTextureCoord, samplingScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, samplingScreenTextureCoordBuffer);
+    gl.vertexAttribPointer(program.aTextureCoord, samplingScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-        gl.bindTexture(gl.TEXTURE_2D, textures[idx]);
+    gl.bindTexture(gl.TEXTURE_2D, textures[idx]);
 
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, samplingScreenIndexBuffer);
-        gl.drawElements(gl.TRIANGLES, samplingScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-    })
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, samplingScreenIndexBuffer);
+    gl.drawElements(gl.TRIANGLES, samplingScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+  });
 
-    // gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
-    // gl.generateMipmap(gl.TEXTURE_2D);
-    // gl.bindTexture(gl.TEXTURE_2D, null);
+  // gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
+  // gl.generateMipmap(gl.TEXTURE_2D);
+  // gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 
@@ -420,27 +422,30 @@ function drawMainScreen() {
 
 
 function initScrolling() {
-  let offset = {
+  const offset = {
     x: 0,
     y: 0,
   };
-  window.addEventListener('keydown', function(e) {
+
+  window.addEventListener('keydown', (e) => {
     switch (e.key) {
       case 'ArrowUp':
-        offset.y += .2;
+        offset.y -= 0.2;
         break;
 
       case 'ArrowDown':
-        offset.y -= .2;
+        offset.y += 0.2;
         break;
 
       case 'ArrowLeft':
-        offset.x -= .2;
+        offset.x += 0.2;
         break;
 
       case 'ArrowRight':
-        offset.x += .2;
+        offset.x -= 0.2;
         break;
+
+      default:
     }
 
     gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
