@@ -74,10 +74,15 @@ function init(_config) {
     uniforms: [
       'uBGAspect',
       'uFactor',
+      'uFactor',
       'uInitialTextureOffset',
       'uIsBuffer',
+      'uMode',
+      'uMultiplier',
       'uMultiplier',
       'uOriginOffset',
+      'uOriginOffset',
+      'uRecover',
       'uRecover',
       'uSampler',
       'uTextureOffset',
@@ -422,19 +427,19 @@ function initScrolling() {
   window.addEventListener('keydown', function(e) {
     switch (e.key) {
       case 'ArrowUp':
-        offset.y += .002;
+        offset.y += .2;
         break;
 
       case 'ArrowDown':
-        offset.y -= .002;
+        offset.y -= .2;
         break;
 
       case 'ArrowLeft':
-        offset.x -= .002;
+        offset.x -= .2;
         break;
 
       case 'ArrowRight':
-        offset.x += .002;
+        offset.x += .2;
         break;
     }
 

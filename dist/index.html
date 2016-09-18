@@ -23,11 +23,11 @@
     document.body.onload = function init() {
         RollOver.init({
             canvas: 'rollover-bg',
-            mode: RollOver.modes.POLYNOMIAL,
+            mode: RollOver.modes.PARABOLIC,
             factor: [0, 0],
-            multiplier: [0, 0],
-            originOffset: [0, 0],
-            recover: [1, 1],
+            multiplier: [0.1, 0],
+            originOffset: [0, -0.75],
+            recover: [1.1, 1],
         });
     };
 </script>
