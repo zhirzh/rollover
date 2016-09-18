@@ -448,7 +448,6 @@ function init(_config) {
   initBackgroundTexture(imgSrcs).then(initSamplingScreen);
   initSampleTexture();
 
-  initSamplingScreen();
   initMainScreen();
 
   initScrolling();
