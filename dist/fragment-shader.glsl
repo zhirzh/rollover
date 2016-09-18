@@ -2,8 +2,6 @@ precision mediump float;
 
 uniform bool uIsBuffer;
 uniform sampler2D uSampler;
-uniform vec2 uInitialTextureOffset;
-uniform vec2 uTextureOffset;
 
 
 uniform int uMode;
@@ -25,7 +23,7 @@ void main() {
 
     if (uIsBuffer) {
         // Add initial and current offset
-        XY = vTextureCoord + uInitialTextureOffset + uTextureOffset;
+        XY = vTextureCoord;
     } else {
         XY = vTextureCoord;
         float R;
