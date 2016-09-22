@@ -1,7 +1,3 @@
-import 'babel-polyfill';
-import 'whatwg-fetch';
-
-
 const fps = 60;
 let last = 0;
 let canvas;

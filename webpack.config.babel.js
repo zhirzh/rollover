@@ -4,7 +4,11 @@ const SRC_DIR = path.resolve(__dirname, 'src');
 const DIST_DIR = path.resolve(__dirname, 'dist');
 
 export default {
-  entry: path.resolve(SRC_DIR, 'index.js'),
+  entry: [
+    'babel-polyfill',
+    'whatwg-fetch',
+    path.resolve(SRC_DIR, 'index.js'),
+  ],
 
   output: {
     path: DIST_DIR,
