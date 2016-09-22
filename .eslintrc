@@ -8,5 +8,8 @@
         "react",
         "jsx-a11y",
         "import"
-    ]
+    ],
+    "rules": {
+        "max-len": 0
+    }
 }
