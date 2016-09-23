@@ -1,8 +1,7 @@
-const fps = 60;
-let last = 0;
+let fps;
+let last;
 let canvas;
 let gl;
-let config;
 
 const modes = {
   ARCTAN: 1,
@@ -94,18 +93,23 @@ async function initProgram({ vertexShaderID, fragmentShaderID, attributes, unifo
 
 
 function initWebGL() {
-  canvas = document.getElementById(config.canvas);
   gl = canvas.getContext('webgl');
   gl.clearColor(0, 0, 0, 1);
 }
 
 
-function initUniforms() {
-  gl.uniform1i(program.uMode, config.mode);
-  gl.uniform2fv(program.uFactor, config.factor);
-  gl.uniform2fv(program.uMultiplier, config.multiplier);
-  gl.uniform2fv(program.uOriginOffset, config.originOffset);
-  gl.uniform2fv(program.uRecover, config.recover);
+function initUniforms({
+  mode,
+  factor,
+  multiplier,
+  originOffset,
+  recover,
+}) {
+  gl.uniform1i(program.uMode, mode);
+  gl.uniform2fv(program.uFactor, factor);
+  gl.uniform2fv(program.uMultiplier, multiplier);
+  gl.uniform2fv(program.uOriginOffset, originOffset);
+  gl.uniform2fv(program.uRecover, recover);
 }
 
 
@@ -188,53 +192,74 @@ function initSampleTexture() {
 }
 
 
+function glBuffer(target, data, usage, config = {}) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(target, buffer);
+  gl.bufferData(target, data, usage);
+  for (const [k, v] of Object.entries(config)) {
+    buffer[k] = v;
+  }
+
+  return buffer;
+}
+
+
 function initSamplingScreen() {
   let x1;
   let y1;
   let x2;
   let y2;
   tileVertexPositionBuffers = textures.map((texture, idx) => {
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     x1 = -1;
-    y1 = -1 * (1 + (2 * idx));
+    y1 = -1 - (2 * idx);
     x2 = x1 + 2;
     y2 = y1 + 2;
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      x1, y1,
-      x2, y1,
-      x2, y2,
-      x1, y2,
-    ]), gl.STATIC_DRAW);
-    buffer.itemSize = 2;
-    buffer.numItems = 4;
+    const buffer = glBuffer(
+      gl.ARRAY_BUFFER,
+      new Float32Array([
+        x1, y1,
+        x2, y1,
+        x2, y2,
+        x1, y2,
+      ]),
+      gl.STATIC_DRAW,
+      {
+        itemSize: 2,
+        numItems: 4,
+      });
 
     return buffer;
   });
 
-  samplingScreenTextureCoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, samplingScreenTextureCoordBuffer);
   x1 = 0;
   y1 = 0;
   x2 = x1 + 1;
   y2 = y1 + 1;
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    x1, y1,
-    x2, y1,
-    x2, y2,
-    x1, y2,
-  ]), gl.STATIC_DRAW);
-  samplingScreenTextureCoordBuffer.itemSize = 2;
-  samplingScreenTextureCoordBuffer.numItems = 4;
+  samplingScreenTextureCoordBuffer = glBuffer(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      x1, y1,
+      x2, y1,
+      x2, y2,
+      x1, y2,
+    ]),
+    gl.STATIC_DRAW,
+    {
+      itemSize: 2,
+      numItems: 4,
+    });
 
-  samplingScreenIndexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, samplingScreenIndexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([
-    0, 1, 2,
-    0, 2, 3,
-  ]), gl.STATIC_DRAW);
-  samplingScreenIndexBuffer.itemSize = 1;
-  samplingScreenIndexBuffer.numItems = 6;
+  samplingScreenIndexBuffer = glBuffer(
+    gl.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array([
+      0, 1, 2,
+      0, 2, 3,
+    ]),
+    gl.STATIC_DRAW,
+    {
+      itemSize: 1,
+      numItems: 6,
+    });
 }
 
 
@@ -243,44 +268,53 @@ function initMainScreen() {
   let y1;
   let x2;
   let y2;
-  mainScreenVertexPositionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenVertexPositionBuffer);
   x1 = -1;
   y1 = -1;
   x2 = x1 + 2;
   y2 = y1 + 2;
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    x1, y1,
-    x2, y1,
-    x2, y2,
-    x1, y2,
-  ]), gl.STATIC_DRAW);
-  mainScreenVertexPositionBuffer.itemSize = 2;
-  mainScreenVertexPositionBuffer.numItems = 4;
+  mainScreenVertexPositionBuffer = glBuffer(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      x1, y1,
+      x2, y1,
+      x2, y2,
+      x1, y2,
+    ]),
+    gl.STATIC_DRAW,
+    {
+      itemSize: 2,
+      numItems: 4,
+    });
 
-  mainScreenTextureCoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenTextureCoordBuffer);
   x1 = 0;
   y1 = 0;
   x2 = x1 + 1;
   y2 = y1 + 1;
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    x1, y1,
-    x2, y1,
-    x2, y2,
-    x1, y2,
-  ]), gl.STATIC_DRAW);
-  mainScreenTextureCoordBuffer.itemSize = 2;
-  mainScreenTextureCoordBuffer.numItems = 4;
+  mainScreenTextureCoordBuffer = glBuffer(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      x1, y1,
+      x2, y1,
+      x2, y2,
+      x1, y2,
+    ]),
+    gl.STATIC_DRAW,
+    {
+      itemSize: 2,
+      numItems: 4,
+    });
 
-  mainScreenIndexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mainScreenIndexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([
-    0, 1, 2,
-    0, 2, 3,
-  ]), gl.STATIC_DRAW);
-  mainScreenIndexBuffer.itemSize = 1;
-  mainScreenIndexBuffer.numItems = 6;
+  mainScreenIndexBuffer = glBuffer(
+    gl.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array([
+      0, 1, 2,
+      0, 2, 3,
+    ]),
+    gl.STATIC_DRAW,
+    {
+      itemSize: 1,
+      numItems: 6,
+    });
 }
 
 
@@ -339,10 +373,6 @@ function drawSamplingScreen() {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, samplingScreenIndexBuffer);
     gl.drawElements(gl.TRIANGLES, samplingScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
   });
-
-  // gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
-  // gl.generateMipmap(gl.TEXTURE_2D);
-  // gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 
@@ -411,12 +441,21 @@ function initScrolling() {
 }
 
 
-async function init(_config) {
-  config = _config;
+async function init({
+  canvas: _canvas,
+  mode,
+  factor,
+  multiplier,
+  originOffset,
+  recover,
+  imgSrcs,
+  fps: _fps,
+}) {
+  canvas = _canvas;
+  fps = _fps;
+  last = 0;
 
-  initWebGL();
-
-  await initProgram({
+  const programConfig = {
     vertexShaderID: 'vertex-shader',
     fragmentShaderID: 'fragment-shader',
     attributes: [
@@ -439,20 +478,19 @@ async function init(_config) {
       'uSampler',
       'uTextureOffset',
     ],
+  };
+
+  initWebGL();
+  await initProgram(programConfig);
+  initUniforms({
+    mode,
+    factor,
+    multiplier,
+    originOffset,
+    recover,
   });
 
-  initUniforms();
-
-  const imgSrcs = [
-    'img/1.jpg',
-    'img/2.jpg',
-    'img/3.jpg',
-    'img/4.jpg',
-    'img/5.jpg',
-  ];
-
   await initBackgroundTexture(imgSrcs);
-
   initSampleTexture();
 
   initSamplingScreen();

@@ -1,34 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TEST</title>
-    <style type="text/css">
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        #rollover-bg {
-            height: 100vh;
-            width: 100vw;
-            display: block;
-        }
-    </style>
+  <title>TEST</title>
+  <style type="text/css">
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    #rollover-bg {
+      height: 100vh;
+      width: 100vw;
+      display: block;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="rollover-bg"></canvas>
+  <canvas id="rollover-bg"></canvas>
 </body>
 <script type="text/javascript" src="roll-over.js"></script>
 <script type="text/javascript">
-    document.body.onload = function init() {
-        RollOver.init({
-            canvas: 'rollover-bg',
-            mode: RollOver.modes.PARABOLIC,
-            factor: [0, 0],
-            multiplier: [0.1, 0],
-            originOffset: [0, -0.75],
-            recover: [1.1, 1],
-        });
-    };
+  document.body.onload = function init() {
+    RollOver.init({
+      canvas: document.querySelector('#rollover-bg'),
+      mode: RollOver.modes.PARABOLIC,
+      factor: [0, 0],
+      multiplier: [0.1, 0],
+      originOffset: [0, -0.75],
+      recover: [1.1, 1],
+      imgSrcs: [
+        'img/1.jpg',
+        'img/2.jpg',
+        'img/3.jpg',
+        'img/4.jpg',
+        'img/5.jpg',
+      ],
+      fps: 60,
+    });
+  };
 </script>
 </html>
