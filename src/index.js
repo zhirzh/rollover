@@ -1,3 +1,6 @@
+import { zip } from './utils';
+
+
 let fps;
 let last;
 let canvas;
@@ -13,13 +16,13 @@ const modes = {
 let program;
 
 let textures;
-let tileVertexPositionBuffers;
 
 let sampleTexture;
 let sampleTextureFramebuffer;
 
-let samplingScreenTextureCoordBuffer;
-let samplingScreenIndexBuffer;
+let samplingScreenVertexPositionBuffers;
+let samplingScreenTextureCoordBuffers;
+let samplingScreenIndexBuffers;
 
 let mainScreenVertexPositionBuffer;
 let mainScreenTextureCoordBuffer;
@@ -205,16 +208,22 @@ function glBuffer(target, data, usage, config = {}) {
 
 
 function initSamplingScreen() {
-  let x1;
-  let y1;
-  let x2;
-  let y2;
-  tileVertexPositionBuffers = textures.map((texture, idx) => {
+  samplingScreenVertexPositionBuffers = [];
+  samplingScreenTextureCoordBuffers = [];
+  samplingScreenIndexBuffers = [];
+
+  textures.forEach((texture, idx) => {
+    let x1;
+    let y1;
+    let x2;
+    let y2;
+    let buffer;
+
     x1 = -1;
     y1 = -1 - (2 * idx);
     x2 = x1 + 2;
     y2 = y1 + 2;
-    const buffer = glBuffer(
+    buffer = glBuffer(
       gl.ARRAY_BUFFER,
       new Float32Array([
         x1, y1,
@@ -227,39 +236,40 @@ function initSamplingScreen() {
         itemSize: 2,
         numItems: 4,
       });
+    samplingScreenVertexPositionBuffers.push(buffer);
 
-    return buffer;
+    x1 = 0;
+    y1 = 0;
+    x2 = x1 + 1;
+    y2 = y1 + 1;
+    buffer = glBuffer(
+      gl.ARRAY_BUFFER,
+      new Float32Array([
+        x1, y1,
+        x2, y1,
+        x2, y2,
+        x1, y2,
+      ]),
+      gl.STATIC_DRAW,
+      {
+        itemSize: 2,
+        numItems: 4,
+      });
+    samplingScreenTextureCoordBuffers.push(buffer);
+
+    buffer = glBuffer(
+      gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array([
+        0, 1, 2,
+        0, 2, 3,
+      ]),
+      gl.STATIC_DRAW,
+      {
+        itemSize: 1,
+        numItems: 6,
+      });
+    samplingScreenIndexBuffers.push(buffer);
   });
-
-  x1 = 0;
-  y1 = 0;
-  x2 = x1 + 1;
-  y2 = y1 + 1;
-  samplingScreenTextureCoordBuffer = glBuffer(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      x1, y1,
-      x2, y1,
-      x2, y2,
-      x1, y2,
-    ]),
-    gl.STATIC_DRAW,
-    {
-      itemSize: 2,
-      numItems: 4,
-    });
-
-  samplingScreenIndexBuffer = glBuffer(
-    gl.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array([
-      0, 1, 2,
-      0, 2, 3,
-    ]),
-    gl.STATIC_DRAW,
-    {
-      itemSize: 1,
-      numItems: 6,
-    });
 }
 
 
@@ -393,18 +403,19 @@ function drawSamplingScreen() {
   gl.clear(gl.COLOR_BUFFER_BIT);
   gl.uniform1i(program.uIsBuffer, true);
 
-  tileVertexPositionBuffers.forEach((tileVertexPositionBuffer, idx) => {
-    gl.bindBuffer(gl.ARRAY_BUFFER, tileVertexPositionBuffer);
-    gl.vertexAttribPointer(program.aVertexPosition, tileVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+  zip(samplingScreenVertexPositionBuffers, samplingScreenTextureCoordBuffers, samplingScreenIndexBuffers, textures)
+    .forEach((row) => {
+      gl.bindBuffer(gl.ARRAY_BUFFER, row[0]);
+      gl.vertexAttribPointer(program.aVertexPosition, row[0].itemSize, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, samplingScreenTextureCoordBuffer);
-    gl.vertexAttribPointer(program.aTextureCoord, samplingScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, row[1]);
+      gl.vertexAttribPointer(program.aTextureCoord, row[1].itemSize, gl.FLOAT, false, 0, 0);
 
-    gl.bindTexture(gl.TEXTURE_2D, textures[idx]);
+      gl.bindTexture(gl.TEXTURE_2D, row[3]);
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, samplingScreenIndexBuffer);
-    gl.drawElements(gl.TRIANGLES, samplingScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-  });
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, row[2]);
+      gl.drawElements(gl.TRIANGLES, row[2].numItems, gl.UNSIGNED_SHORT, 0);
+    });
 }
 
 
