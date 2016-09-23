@@ -27,34 +27,69 @@ let mainScreenTextureCoordBuffer;
 let mainScreenIndexBuffer;
 
 
-function getShader(id) {
-  return fetch(`${id}.glsl`)
-    .then(res => res.text())
-    .then((script) => {
-      let shader;
-      switch (id) {
-        case 'fragment-shader':
-          shader = gl.createShader(gl.FRAGMENT_SHADER);
-          break;
+async function fetchShader(id) {
+  let shader;
+  switch (id) {
+    case 'fragment-shader':
+      shader = gl.createShader(gl.FRAGMENT_SHADER);
+      break;
 
-        case 'vertex-shader':
-          shader = gl.createShader(gl.VERTEX_SHADER);
-          break;
+    case 'vertex-shader':
+      shader = gl.createShader(gl.VERTEX_SHADER);
+      break;
 
-        default:
-          return null;
-      }
+    default:
+  }
 
-      gl.shaderSource(shader, script);
-      gl.compileShader(shader);
+  try {
+    const res = await fetch(`${id}.glsl`);
+    const shaderSrc = await res.text();
+    gl.shaderSource(shader, shaderSrc);
+  } catch (e) {
+    throw e;
+  }
 
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error(gl.getShaderInfoLog(shader));
-        return null;
-      }
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return null;
+  }
 
-      return shader;
-    });
+  return shader;
+}
+
+
+function fetchShaders(...shaderIDs) {
+  return Promise.all(shaderIDs.map(shaderId => fetchShader(shaderId)));
+}
+
+
+async function initProgram({ vertexShaderID, fragmentShaderID, attributes, uniforms }) {
+  program = gl.createProgram();
+
+  try {
+    const shaders = await fetchShaders(vertexShaderID, fragmentShaderID);
+    shaders.forEach(shader => gl.attachShader(program, shader));
+  } catch (e) {
+    throw e;
+  }
+
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return;
+  }
+
+  gl.useProgram(program);
+
+  attributes.forEach((attribute) => {
+    program[attribute] = gl.getAttribLocation(program, attribute);
+    gl.enableVertexAttribArray(program[attribute]);
+  });
+
+  uniforms.forEach((uniform) => {
+    program[uniform] = gl.getUniformLocation(program, uniform);
+  });
 }
 
 
@@ -74,39 +109,6 @@ function initUniforms() {
 }
 
 
-function initProgram({ vertexShaderID, fragmentShaderID, attributes, uniforms }) {
-  Promise.all([
-    getShader(vertexShaderID),
-    getShader(fragmentShaderID),
-  ])
-    .then(([fragmentShader, vertexShader]) => {
-      program = gl.createProgram();
-      gl.attachShader(program, vertexShader);
-      gl.attachShader(program, fragmentShader);
-      gl.linkProgram(program);
-
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error(gl.getProgramInfoLog(program));
-        return;
-      }
-
-      gl.useProgram(program);
-
-      attributes.forEach((attribute) => {
-        program[attribute] = gl.getAttribLocation(program, attribute);
-        gl.enableVertexAttribArray(program[attribute]);
-      });
-
-      uniforms.forEach((uniform) => {
-        program[uniform] = gl.getUniformLocation(program, uniform);
-      });
-
-      initUniforms();
-    })
-    .catch(e => console.error(e));
-}
-
-
 function loadTile(imgSrc) {
   return new Promise((res) => {
     const img = new Image();
@@ -116,26 +118,32 @@ function loadTile(imgSrc) {
 }
 
 
-function initTileTextures(images) {
-  textures = images.map((img) => {
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    return texture;
-  });
+function loadTiles(imgSrcs) {
+  return Promise.all(imgSrcs.map(loadTile));
 }
 
 
-function initBackgroundTexture(imgSrcs) {
-  return Promise.all(imgSrcs.map(loadTile)).then(initTileTextures);
+async function initBackgroundTexture(imgSrcs) {
+  try {
+    const imgs = await loadTiles(imgSrcs);
+
+    textures = imgs.map((img) => {
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+
+      gl.bindTexture(gl.TEXTURE_2D, null);
+
+      return texture;
+    });
+  } catch (e) {
+    throw e;
+  }
 }
 
 
@@ -403,12 +411,12 @@ function initScrolling() {
 }
 
 
-function init(_config) {
+async function init(_config) {
   config = _config;
 
   initWebGL();
 
-  initProgram({
+  await initProgram({
     vertexShaderID: 'vertex-shader',
     fragmentShaderID: 'fragment-shader',
     attributes: [
@@ -433,6 +441,8 @@ function init(_config) {
     ],
   });
 
+  initUniforms();
+
   const imgSrcs = [
     'img/1.jpg',
     'img/2.jpg',
@@ -441,16 +451,16 @@ function init(_config) {
     'img/5.jpg',
   ];
 
-  initBackgroundTexture(imgSrcs).then(initSamplingScreen);
+  await initBackgroundTexture(imgSrcs);
+
   initSampleTexture();
 
+  initSamplingScreen();
   initMainScreen();
 
   initScrolling();
 
-  setTimeout(() => {
-    requestAnimationFrame(render);
-  }, 1000);
+  requestAnimationFrame(render);
 }
 
 
