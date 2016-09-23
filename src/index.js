@@ -26,6 +26,12 @@ let mainScreenTextureCoordBuffer;
 let mainScreenIndexBuffer;
 
 
+function initWebGL() {
+  gl = canvas.getContext('webgl');
+  gl.clearColor(0, 0, 0, 1);
+}
+
+
 async function fetchShader(id) {
   let shader;
   switch (id) {
@@ -89,12 +95,6 @@ async function initProgram({ vertexShaderID, fragmentShaderID, attributes, unifo
   uniforms.forEach((uniform) => {
     program[uniform] = gl.getUniformLocation(program, uniform);
   });
-}
-
-
-function initWebGL() {
-  gl = canvas.getContext('webgl');
-  gl.clearColor(0, 0, 0, 1);
 }
 
 
@@ -318,6 +318,38 @@ function initMainScreen() {
 }
 
 
+function initScrolling() {
+  const offset = {
+    x: 0,
+    y: 0,
+  };
+
+  window.addEventListener('keydown', (e) => {
+    switch (e.key) {
+      case 'ArrowUp':
+        offset.y -= 0.2;
+        break;
+
+      case 'ArrowDown':
+        offset.y += 0.2;
+        break;
+
+      case 'ArrowLeft':
+        offset.x += 0.2;
+        break;
+
+      case 'ArrowRight':
+        offset.x -= 0.2;
+        break;
+
+      default:
+    }
+
+    gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
+  });
+}
+
+
 function resize() {
   if (canvas.width === canvas.clientWidth && canvas.height === canvas.clientHeight) {
     return;
@@ -380,6 +412,7 @@ function drawMainScreen() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
   gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform1i(program.uIsBuffer, false);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, mainScreenVertexPositionBuffer);
   gl.vertexAttribPointer(program.aVertexPosition, mainScreenVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -388,7 +421,6 @@ function drawMainScreen() {
   gl.vertexAttribPointer(program.aTextureCoord, mainScreenTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
   gl.bindTexture(gl.TEXTURE_2D, sampleTexture);
-  gl.uniform1i(program.uIsBuffer, false);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mainScreenIndexBuffer);
   gl.drawElements(gl.TRIANGLES, mainScreenIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
@@ -406,38 +438,6 @@ function render(HRTimestamp) {
   resize();
   drawSamplingScreen();
   drawMainScreen();
-}
-
-
-function initScrolling() {
-  const offset = {
-    x: 0,
-    y: 0,
-  };
-
-  window.addEventListener('keydown', (e) => {
-    switch (e.key) {
-      case 'ArrowUp':
-        offset.y -= 0.2;
-        break;
-
-      case 'ArrowDown':
-        offset.y += 0.2;
-        break;
-
-      case 'ArrowLeft':
-        offset.x += 0.2;
-        break;
-
-      case 'ArrowRight':
-        offset.x -= 0.2;
-        break;
-
-      default:
-    }
-
-    gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
-  });
 }
 
 
