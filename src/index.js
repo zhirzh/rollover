@@ -1,10 +1,16 @@
-import { newScreens } from './utils';
+import {
+  newScreens,
+  initWebGL,
+  initProgram,
+  loadTiles,
+  glBuffer,
+} from './utils';
 
 
 let fps;
-let last;
 let canvas;
 let gl;
+let last = 0;
 
 const modes = {
   ARCTAN: 1,
@@ -20,81 +26,10 @@ let sampleTextureFramebuffer;
 let samplingScreens;
 let mainScreen;
 
-function initWebGL() {
-  gl = canvas.getContext('webgl');
-  gl.clearColor(0, 0, 0, 1);
-}
 
-
-function initScreens(imgSrcsLength) {
+export function initScreens(imgSrcsLength) {
   samplingScreens = newScreens(imgSrcsLength);
   mainScreen = newScreens(1);
-}
-
-
-async function fetchShader(id) {
-  let shader;
-  switch (id) {
-    case 'fragment-shader':
-      shader = gl.createShader(gl.FRAGMENT_SHADER);
-      break;
-
-    case 'vertex-shader':
-      shader = gl.createShader(gl.VERTEX_SHADER);
-      break;
-
-    default:
-  }
-
-  try {
-    const res = await fetch(`${id}.glsl`);
-    const shaderSrc = await res.text();
-    gl.shaderSource(shader, shaderSrc);
-  } catch (e) {
-    throw e;
-  }
-
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return null;
-  }
-
-  return shader;
-}
-
-
-function fetchShaders(...shaderIDs) {
-  return Promise.all(shaderIDs.map(shaderId => fetchShader(shaderId)));
-}
-
-
-async function initProgram({ vertexShaderID, fragmentShaderID, attributes, uniforms }) {
-  program = gl.createProgram();
-
-  try {
-    const shaders = await fetchShaders(vertexShaderID, fragmentShaderID);
-    shaders.forEach(shader => gl.attachShader(program, shader));
-  } catch (e) {
-    throw e;
-  }
-
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return;
-  }
-
-  gl.useProgram(program);
-
-  attributes.forEach((attribute) => {
-    program[attribute] = gl.getAttribLocation(program, attribute);
-    gl.enableVertexAttribArray(program[attribute]);
-  });
-
-  uniforms.forEach((uniform) => {
-    program[uniform] = gl.getUniformLocation(program, uniform);
-  });
 }
 
 
@@ -110,20 +45,6 @@ function initUniforms({
   gl.uniform2fv(program.uMultiplier, multiplier);
   gl.uniform2fv(program.uOriginOffset, originOffset);
   gl.uniform2fv(program.uRecover, recover);
-}
-
-
-function loadTile(imgSrc) {
-  return new Promise((res) => {
-    const img = new Image();
-    img.src = imgSrc;
-    img.onload = () => res(img);
-  });
-}
-
-
-function loadTiles(imgSrcs) {
-  return Promise.all(imgSrcs.map(loadTile));
 }
 
 
@@ -193,18 +114,6 @@ function initSampleTexture() {
 }
 
 
-function glBuffer(target, data, usage, config = {}) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(target, buffer);
-  gl.bufferData(target, data, usage);
-  for (const [k, v] of Object.entries(config)) {
-    buffer[k] = v;
-  }
-
-  return buffer;
-}
-
-
 function initSamplingScreen() {
   samplingScreens.forEach((samplingScreen, idx) => {
     let x1;
@@ -218,6 +127,7 @@ function initSamplingScreen() {
     x2 = x1 + 2;
     y2 = y1 + 2;
     buffer = glBuffer(
+      gl,
       gl.ARRAY_BUFFER,
       new Float32Array([
         x1, y1,
@@ -237,6 +147,7 @@ function initSamplingScreen() {
     x2 = x1 + 1;
     y2 = y1 + 1;
     buffer = glBuffer(
+      gl,
       gl.ARRAY_BUFFER,
       new Float32Array([
         x1, y1,
@@ -252,6 +163,7 @@ function initSamplingScreen() {
     samplingScreen.textureCoordBuffer = buffer;
 
     buffer = glBuffer(
+      gl,
       gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array([
         0, 1, 2,
@@ -277,6 +189,7 @@ function initMainScreen() {
   x2 = x1 + 2;
   y2 = y1 + 2;
   mainScreen.vertexPositionBuffer = glBuffer(
+    gl,
     gl.ARRAY_BUFFER,
     new Float32Array([
       x1, y1,
@@ -295,6 +208,7 @@ function initMainScreen() {
   x2 = x1 + 1;
   y2 = y1 + 1;
   mainScreen.textureCoordBuffer = glBuffer(
+    gl,
     gl.ARRAY_BUFFER,
     new Float32Array([
       x1, y1,
@@ -309,6 +223,7 @@ function initMainScreen() {
     });
 
   mainScreen.indexBuffer = glBuffer(
+    gl,
     gl.ELEMENT_ARRAY_BUFFER,
     new Uint16Array([
       0, 1, 2,
@@ -457,7 +372,6 @@ async function init({
 }) {
   canvas = _canvas;
   fps = _fps;
-  last = 0;
 
   const programConfig = {
     vertexShaderID: 'vertex-shader',
@@ -484,10 +398,8 @@ async function init({
     ],
   };
 
-  initWebGL();
-  initScreens(imgSrcs.length);
-
-  await initProgram(programConfig);
+  gl = initWebGL(canvas);
+  program = await initProgram(gl, programConfig);
   initUniforms({
     mode,
     factor,
@@ -495,6 +407,8 @@ async function init({
     originOffset,
     recover,
   });
+
+  initScreens(imgSrcs.length);
 
   await initBackgroundTexture(imgSrcs);
   initSampleTexture();
