@@ -8,6 +8,7 @@ import {
 
 let fps;
 let canvas;
+let type;
 let gl;
 let last = 0;
 
@@ -16,6 +17,12 @@ const modes = {
   LINEAR: 2,
   PARABOLIC: 3,
   POLYNOMIAL: 4,
+};
+
+const types = {
+  VERTICAL: 1,
+  HORIZONTAL: 2,
+  REVERSED: 4,
 };
 
 let program;
@@ -29,8 +36,28 @@ export function initScreens(imgSrcsLength) {
   samplingScreen.tiles.forEach((tile, idx) => {
     const offset = {
       x: 0,
-      y: -1 * (2 * idx),
+      y: 0,
     };
+
+    switch (type) {
+      case types.VERTICAL:
+        offset.y = -1 * (2 * idx);
+        break;
+
+      case types.HORIZONTAL:
+        offset.x = -1 * (2 * idx);
+        break;
+
+      case (types.VERTICAL | types.REVERSED):
+        offset.y = 2 * idx;
+        break;
+
+      case (types.HORIZONTAL | types.REVERSED):
+        offset.x = 2 * idx;
+        break;
+
+      default:
+    }
 
     tile.initDataBuffers(offset);
   });
@@ -211,6 +238,7 @@ function render(HRTimestamp) {
 async function init({
   canvas: _canvas,
   mode,
+  type: _type,
   factor,
   multiplier,
   originOffset,
@@ -220,6 +248,7 @@ async function init({
 }) {
   canvas = _canvas;
   fps = _fps;
+  type = _type;
 
   const programConfig = {
     vertexShaderID: 'vertex-shader',
@@ -266,4 +295,5 @@ async function init({
 export {
   init,
   modes,
+  types,
 };
