@@ -11,6 +11,14 @@ let canvas;
 let type;
 let gl;
 let last = 0;
+let acc = 0;
+let acc0 = 0.005;
+let delta = 0;
+const offset = {
+  x: 0,
+  y: 0,
+};
+
 
 const modes = {
   ARCTAN: 1,
@@ -149,19 +157,14 @@ function initSampleTexture() {
 
 
 function initScrolling() {
-  const offset = {
-    x: 0,
-    y: 0,
-  };
-
   window.addEventListener('keydown', (e) => {
     switch (e.key) {
       case 'ArrowUp':
-        offset.y -= 0.2;
+        acc -= acc0;
         break;
 
       case 'ArrowDown':
-        offset.y += 0.2;
+        acc += acc0;
         break;
 
       case 'ArrowLeft':
@@ -232,6 +235,35 @@ function render(HRTimestamp) {
 
   gl.uniform1i(program.uIsBuffer, false);
   mainScreen.render();
+
+  if (acc !== 0) {
+    if (acc > 0) {
+      delta = Math.pow(Math.abs(acc), 0.75);
+    } else if (acc < 0) {
+      delta = -Math.pow(Math.abs(acc), 0.75);
+    }
+    acc /= 2;
+  } else {
+    delta = 0;
+  }
+
+  switch (type) {
+    case types.VERTICAL:
+      offset.y += delta;
+      break;
+
+    case types.VERTICAL | types.REVERSED:
+      offset.y -= delta;
+      break;
+
+    default:
+  }
+  gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
+
+
+  if (Math.abs(acc) < 0.1 * acc0) {
+    acc = 0;
+  }
 }
 
 
@@ -289,6 +321,10 @@ async function init({
   initScrolling();
 
   requestAnimationFrame(render);
+
+  window.addEventListener('wheel', (e) => {
+    acc += (e.deltaY > 0 ? acc0 : -acc0);
+  });
 }
 
 
