@@ -26,7 +26,17 @@ let mainScreen;
 
 export function initScreens(imgSrcsLength) {
   samplingScreen = new Screen(gl, program, imgSrcsLength);
+  samplingScreen.tiles.forEach((tile, idx) => {
+    const offset = {
+      x: 0,
+      y: -1 * (2 * idx),
+    };
+
+    tile.initDataBuffers(offset);
+  });
+
   mainScreen = new Screen(gl, program);
+  mainScreen.initDataBuffers();
 }
 
 
@@ -111,23 +121,6 @@ function initSampleTexture() {
 }
 
 
-function initSamplingScreen() {
-  samplingScreen.tiles.forEach((tile, idx) => {
-    const offset = {
-      x: 0,
-      y: -1 * (2 * idx),
-    };
-
-    tile.initDataBuffers(offset);
-  });
-}
-
-
-function initMainScreen() {
-  mainScreen.initDataBuffers();
-}
-
-
 function initScrolling() {
   const offset = {
     x: 0,
@@ -197,18 +190,6 @@ function resize() {
 }
 
 
-function drawSamplingScreen() {
-  gl.uniform1i(program.uIsBuffer, true);
-  samplingScreen.render();
-}
-
-
-function drawMainScreen() {
-  gl.uniform1i(program.uIsBuffer, false);
-  mainScreen.render();
-}
-
-
 function render(HRTimestamp) {
   requestAnimationFrame(render);
 
@@ -218,8 +199,12 @@ function render(HRTimestamp) {
   last = HRTimestamp;
 
   resize();
-  drawSamplingScreen();
-  drawMainScreen();
+
+  gl.uniform1i(program.uIsBuffer, true);
+  samplingScreen.render();
+
+  gl.uniform1i(program.uIsBuffer, false);
+  mainScreen.render();
 }
 
 
@@ -271,9 +256,6 @@ async function init({
 
   await initBackgroundTexture(imgSrcs);
   initSampleTexture();
-
-  initSamplingScreen();
-  initMainScreen();
 
   initScrolling();
 
