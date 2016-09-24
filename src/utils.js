@@ -1,11 +1,28 @@
-export function zip(...arrs) {
-  const minLen = Math.min(...arrs.map(a => a.length));
+const Screen = {
+  texture: undefined,
+  vertexPositionBuffer: [],
+  textureCoordBuffer: [],
+  indexBuffer: [],
+};
 
-  const arr = [];
-  for (let i = 0; i < minLen; i += 1) {
-    const x = arrs.map(a => a[i]);
-    arr.push(x);
+function newScreen() {
+  return Object.assign(Object.create(Screen), {});
+}
+
+export function newScreens(n) {
+  if (n < 1) {
+    return null;
   }
 
-  return arr;
+  if (n === 1) {
+    return newScreen();
+  }
+
+  const screens = [];
+  while (n > 0) {
+    screens.push(newScreen());
+    n -= 1;
+  }
+
+  return screens;
 }
