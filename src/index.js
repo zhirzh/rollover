@@ -263,7 +263,8 @@ async function init({
   multiplier,
   originOffset,
   recover,
-  imgSrcs,
+  imgSrcs = [],
+  imgSrc = null,
   fps: _fps,
 }) {
   canvas = _canvas;
@@ -300,6 +301,10 @@ async function init({
     originOffset,
     recover,
   });
+
+  if (imgSrc !== null) {
+    imgSrcs.push(imgSrc);
+  }
 
   initScreens(imgSrcs.length);
 

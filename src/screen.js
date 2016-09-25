@@ -80,7 +80,7 @@ class Tile {
 
 
 export default class Screen extends Tile {
-  constructor(gl, program, n = 1) {
+  constructor(gl, program, n = 0) {
     super();
     this.gl = gl;
     this.program = program;
@@ -89,7 +89,7 @@ export default class Screen extends Tile {
 
     this.frameBuffer = null;
 
-    if (n > 1) {
+    if (n > 0) {
       this.tiles = this.initTiles();
     }
   }
@@ -114,7 +114,7 @@ export default class Screen extends Tile {
 
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-    if (this.tilesCount === 1) {
+    if (this.tilesCount === 0) {
       super.render();
     } else {
       this.tiles.forEach(tile => tile.render());
