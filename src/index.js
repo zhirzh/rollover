@@ -30,7 +30,6 @@ const modes = {
 const types = {
   VERTICAL: 1,
   HORIZONTAL: 2,
-  REVERSED: 4,
 };
 
 let program;
@@ -53,14 +52,6 @@ export function initScreens(imgSrcsLength) {
         break;
 
       case types.HORIZONTAL:
-        offset.x = -1 * (2 * idx);
-        break;
-
-      case (types.VERTICAL | types.REVERSED):
-        offset.y = 2 * idx;
-        break;
-
-      case (types.HORIZONTAL | types.REVERSED):
         offset.x = 2 * idx;
         break;
 
@@ -184,35 +175,38 @@ function initScrolling() {
 
 
 function resize() {
-  if (canvas.width === canvas.clientWidth && canvas.height === canvas.clientHeight) {
-    return;
-  }
+  const imgWidth = 1080;
+  const imgHeight = 7000 / 5;
 
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
+  const viewportAspect = window.innerWidth / window.innerHeight;
+  const imgAspect = imgWidth / imgHeight;
 
-  const widthRatio = 1080 / canvas.width;
-  const heightRatio = (7000 / 5) / canvas.height;
+  canvas.style.width = `${window.innerWidth}px`;
+  canvas.style.height = `${window.innerHeight}px`;
 
-
-  const backgroundImageAspect = 1080 / (7000 / 5);
-
-  const initialTextureOffset = {
-    x: 0,
-    y: 0,
-  };
+  canvas.width = imgWidth;
+  canvas.height = imgHeight;
 
   const aspect = {
     x: 1,
     y: 1,
   };
+  const initialTextureOffset = {
+    x: 0,
+    y: 0,
+  };
+  switch (type) {
+    case types.VERTICAL:
+      aspect.y = viewportAspect / imgAspect;
+      initialTextureOffset.y = (1 / aspect.y) - 1;
+      break;
 
-  if (backgroundImageAspect > 1) {
-    aspect.x = widthRatio / heightRatio;
-    initialTextureOffset.x = -0.5 * (1 - (1 / aspect.x));
-  } else {
-    aspect.y = heightRatio / widthRatio;
-    initialTextureOffset.y = 0.5 * (1 - (1 / aspect.y));
+    case types.HORIZONTAL:
+      aspect.x = imgAspect / viewportAspect;
+      initialTextureOffset.x = 1 - (1 / aspect.x);
+      break;
+
+    default:
   }
 
   gl.uniform2f(program.uBGAspect, aspect.x, aspect.y);
@@ -227,8 +221,6 @@ function render(HRTimestamp) {
     return;
   }
   last = HRTimestamp;
-
-  resize();
 
   gl.uniform1i(program.uIsBuffer, true);
   samplingScreen.render();
@@ -250,10 +242,6 @@ function render(HRTimestamp) {
   switch (type) {
     case types.VERTICAL:
       offset.y += delta;
-      break;
-
-    case types.VERTICAL | types.REVERSED:
-      offset.y -= delta;
       break;
 
     default:
@@ -319,6 +307,9 @@ async function init({
   initSampleTexture();
 
   initScrolling();
+
+  resize();
+  window.addEventListener('resize', resize);
 
   requestAnimationFrame(render);
 

@@ -13,8 +13,7 @@ void main() {
 
     if (uIsBuffer) {
         // Appy corrct aspect
-        // XY = vec4((aVertexPosition + uInitialTextureOffset + uTextureOffset) * uBGAspect, 0, 1);
-        XY = vec4((aVertexPosition + uTextureOffset) * uBGAspect, 0, 1);
+        XY = vec4((aVertexPosition + uInitialTextureOffset + uTextureOffset) * uBGAspect, 0, 1);
     } else {
         XY = vec4(aVertexPosition, 0, 1);
     }
