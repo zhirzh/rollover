@@ -16,7 +16,7 @@ const offset = {
   y: 0,
 };
 let aspect;
-
+let initialTextureOffset;
 
 const modes = {
   ARCTAN: 1,
@@ -162,19 +162,20 @@ function resize() {
     x: 1,
     y: 1,
   };
-  const initialTextureOffset = {
+  initialTextureOffset = {
     x: 0,
     y: 0,
   };
   switch (type) {
     case types.VERTICAL:
       aspect.y = viewportAspect / imgAspect;
-      initialTextureOffset.y = -1 * (1 - (1 / aspect.y));
+      initialTextureOffset.y = (1 / aspect.y) - 1;
       break;
 
     case types.HORIZONTAL:
       aspect.x = imgAspect / viewportAspect;
-      initialTextureOffset.x = 1 - (1 / aspect.x);
+      // aspect.x = 1;
+      initialTextureOffset.x = -1 * ((1 / aspect.x) - 1);
       break;
 
     default:
@@ -198,31 +199,6 @@ function render(HRTimestamp) {
 
   gl.uniform1i(program.uIsBuffer, false);
   mainScreen.render();
-
-  // if (acc !== 0) {
-  //   if (acc > 0) {
-  //     delta = Math.pow(Math.abs(acc), 0.75);
-  //   } else if (acc < 0) {
-  //     delta = -Math.pow(Math.abs(acc), 0.75);
-  //   }
-  //   acc /= 2;
-  // } else {
-  //   delta = 0;
-  // }
-
-  // switch (type) {
-  //   case types.VERTICAL:
-  //     offset.y += delta;
-  //     break;
-
-  //   default:
-  // }
-  // gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
-
-
-  // if (Math.abs(acc) < 0.1 * acc0) {
-  //   acc = 0;
-  // }
 }
 
 
@@ -293,10 +269,20 @@ function move(delta) {
   switch (type) {
     case types.VERTICAL:
       offset.y += delta;
+      if (offset.y < 0) {
+        offset.y = 0;
+      } else if (offset.y > 8 - (2 * initialTextureOffset.y)) {
+        offset.y = 8 - (2 * initialTextureOffset.y);
+      }
       break;
 
     case types.HORIZONTAL:
       offset.x += -1 * delta;
+      if (offset.x > 0) {
+        offset.x = 0;
+      } else if (offset.x < -8 - (2 * initialTextureOffset.x)) {
+        offset.x = -8 - (2 * initialTextureOffset.x);
+      }
       break;
 
     default:

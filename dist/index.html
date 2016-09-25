@@ -25,6 +25,7 @@
     RollOver.init({
       canvas: document.querySelector('#rollover-bg'),
       mode: RollOver.modes.PARABOLIC,
+      type: RollOver.types.VERTICAL,
       type: RollOver.types.HORIZONTAL,
       factor: [0, 0],
       multiplier: [0, 0],
@@ -44,7 +45,11 @@
   window.addEventListener('keydown', function move(e) {
     switch (e.key) {
       case 'ArrowDown':
-        RollOver.move(0.1);
+        if (e.shiftKey) {
+          RollOver.move(0.01);
+        } else {
+          RollOver.move(0.1);
+        }
         break;
 
       case 'ArrowUp':
