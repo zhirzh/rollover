@@ -11,13 +11,11 @@ let canvas;
 let type;
 let gl;
 let last = 0;
-let acc = 0;
-let acc0 = 0.005;
-let delta = 0;
 const offset = {
   x: 0,
   y: 0,
 };
+let aspect;
 
 
 const modes = {
@@ -41,24 +39,24 @@ let mainScreen;
 export function initScreens(imgSrcsLength) {
   samplingScreen = new Screen(gl, program, imgSrcsLength);
   samplingScreen.tiles.forEach((tile, idx) => {
-    const offset = {
+    const tileOffset = {
       x: 0,
       y: 0,
     };
 
     switch (type) {
       case types.VERTICAL:
-        offset.y = -1 * (2 * idx);
+        tileOffset.y = -1 * (2 * idx);
         break;
 
       case types.HORIZONTAL:
-        offset.x = 2 * idx;
+        tileOffset.x = 2 * idx;
         break;
 
       default:
     }
 
-    tile.initDataBuffers(offset);
+    tile.initDataBuffers(tileOffset);
   });
 
   mainScreen = new Screen(gl, program);
@@ -147,33 +145,6 @@ function initSampleTexture() {
 }
 
 
-function initScrolling() {
-  window.addEventListener('keydown', (e) => {
-    switch (e.key) {
-      case 'ArrowUp':
-        acc -= acc0;
-        break;
-
-      case 'ArrowDown':
-        acc += acc0;
-        break;
-
-      case 'ArrowLeft':
-        offset.x += 0.2;
-        break;
-
-      case 'ArrowRight':
-        offset.x -= 0.2;
-        break;
-
-      default:
-    }
-
-    gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
-  });
-}
-
-
 function resize() {
   const imgWidth = 1080;
   const imgHeight = 7000 / 5;
@@ -184,10 +155,10 @@ function resize() {
   canvas.style.width = `${window.innerWidth}px`;
   canvas.style.height = `${window.innerHeight}px`;
 
-  canvas.width = imgWidth;
-  canvas.height = imgHeight;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-  const aspect = {
+  aspect = {
     x: 1,
     y: 1,
   };
@@ -198,7 +169,7 @@ function resize() {
   switch (type) {
     case types.VERTICAL:
       aspect.y = viewportAspect / imgAspect;
-      initialTextureOffset.y = (1 / aspect.y) - 1;
+      initialTextureOffset.y = -1 * (1 - (1 / aspect.y));
       break;
 
     case types.HORIZONTAL:
@@ -228,30 +199,30 @@ function render(HRTimestamp) {
   gl.uniform1i(program.uIsBuffer, false);
   mainScreen.render();
 
-  if (acc !== 0) {
-    if (acc > 0) {
-      delta = Math.pow(Math.abs(acc), 0.75);
-    } else if (acc < 0) {
-      delta = -Math.pow(Math.abs(acc), 0.75);
-    }
-    acc /= 2;
-  } else {
-    delta = 0;
-  }
+  // if (acc !== 0) {
+  //   if (acc > 0) {
+  //     delta = Math.pow(Math.abs(acc), 0.75);
+  //   } else if (acc < 0) {
+  //     delta = -Math.pow(Math.abs(acc), 0.75);
+  //   }
+  //   acc /= 2;
+  // } else {
+  //   delta = 0;
+  // }
 
-  switch (type) {
-    case types.VERTICAL:
-      offset.y += delta;
-      break;
+  // switch (type) {
+  //   case types.VERTICAL:
+  //     offset.y += delta;
+  //     break;
 
-    default:
-  }
-  gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
+  //   default:
+  // }
+  // gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
 
 
-  if (Math.abs(acc) < 0.1 * acc0) {
-    acc = 0;
-  }
+  // if (Math.abs(acc) < 0.1 * acc0) {
+  //   acc = 0;
+  // }
 }
 
 
@@ -311,16 +282,27 @@ async function init({
   await initBackgroundTexture(imgSrcs);
   initSampleTexture();
 
-  initScrolling();
-
   resize();
-  window.addEventListener('resize', resize);
-
   requestAnimationFrame(render);
 
-  window.addEventListener('wheel', (e) => {
-    acc += (e.deltaY > 0 ? acc0 : -acc0);
-  });
+  window.addEventListener('resize', resize);
+}
+
+
+function move(delta) {
+  switch (type) {
+    case types.VERTICAL:
+      offset.y += delta;
+      break;
+
+    case types.HORIZONTAL:
+      offset.x += -1 * delta;
+      break;
+
+    default:
+  }
+
+  gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
 }
 
 
@@ -328,4 +310,5 @@ export {
   init,
   modes,
   types,
+  move,
 };

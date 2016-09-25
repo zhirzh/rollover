@@ -14,9 +14,9 @@ class Tile {
     this.indexBuffer = [];
   }
 
-  initDataBuffers(offset = { x: 0, y: 0 }) {
-    const x1 = -1 + offset.x;
-    const y1 = -1 + offset.y;
+  initDataBuffers(tileOffset = { x: 0, y: 0 }) {
+    const x1 = -1 + tileOffset.x;
+    const y1 = -1 + tileOffset.y;
     const x2 = x1 + 2;
     const y2 = y1 + 2;
 
