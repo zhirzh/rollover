@@ -14,4 +14,6 @@ Add a rolling background to the website.
 - [x] Add multiple distortion modes
 - [x] Refactor code
 - [x] Add *proper* demo
-- [ ] Upper and lower scroll limits
+- [x] Upper and lower scroll limits
+- [x] Add controls API to allow BG movement
+- [ ] Add smooth scrolling / movement
