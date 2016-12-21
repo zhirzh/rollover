@@ -8,11 +8,6 @@ uniform vec2 uTextureOffset;
 varying vec2 vTextureCoord;
 
 void main() {
-    vec4 XY;
-
-    // Appy corrct aspect
-    XY = vec4((aVertexPosition + uInitialTextureOffset + uTextureOffset) * uBGAspect, 0, 1);
-
-    gl_Position = XY;
+    gl_Position = vec4((aVertexPosition + uInitialTextureOffset + uTextureOffset) * uBGAspect, 0, 1);
     vTextureCoord = aTextureCoord;
 }

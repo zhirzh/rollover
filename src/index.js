@@ -20,23 +20,33 @@ const modes = {
   HORIZONTAL: 2,
 };
 
-const glConfig = {
-  vertexShader: 'vertex-shader.glsl',
-  fragmentShader: 'fragment-shader.glsl',
+const mainProgramConfig = {
+  vertexShader: 'vertex-shader-main.glsl',
+  fragmentShader: 'fragment-shader-main.glsl',
+  attributes: [
+    'aTextureCoord',
+    'aVertexPosition',
+  ],
+  uniforms: [
+    'uFactor',
+    'ufilter',
+    'uMultiplier',
+    'uOriginOffset',
+    'uRecover',
+    'uSampler',
+  ],
+};
+
+const samplingProgramConfig = {
+  vertexShader: 'vertex-shader-sampling.glsl',
+  fragmentShader: 'fragment-shader-sampling.glsl',
   attributes: [
     'aTextureCoord',
     'aVertexPosition',
   ],
   uniforms: [
     'uBGAspect',
-    'uFactor',
     'uInitialTextureOffset',
-    'uIsBuffer',
-    'ufilter',
-    'uMultiplier',
-    'uOriginOffset',
-    'uRecover',
-    'uSampler',
     'uTextureOffset',
   ],
 };
@@ -59,9 +69,10 @@ let aspect;
 let initialTextureOffset;
 
 let gl;
-let program;
-let samplingScreen;
+let mainProgram;
+let samplingProgram;
 let mainScreen;
+let samplingScreen;
 
 
 function initSamplingFrameBuffer() {
@@ -125,8 +136,8 @@ function resize() {
     default:
   }
 
-  gl.uniform2f(program.uBGAspect, aspect.x, aspect.y);
-  gl.uniform2f(program.uInitialTextureOffset, initialTextureOffset.x, initialTextureOffset.y);
+  gl.uniform2f(samplingProgram.uBGAspect, aspect.x, aspect.y);
+  gl.uniform2f(samplingProgram.uInitialTextureOffset, initialTextureOffset.x, initialTextureOffset.y);
 }
 
 
@@ -138,13 +149,13 @@ function render(HRTimestamp) {
   }
   last = HRTimestamp;
 
-  gl.uniform1i(program.uIsBuffer, true);
+  gl.useProgram(samplingProgram);
   gl.bindFramebuffer(gl.FRAMEBUFFER, samplingScreen.frameBuffer);
   gl.viewport(0, 0, samplingScreen.frameBuffer.width, samplingScreen.frameBuffer.height);
   gl.clear(gl.COLOR_BUFFER_BIT);
   samplingScreen.tiles.forEach(tile => tile.render());
 
-  gl.uniform1i(program.uIsBuffer, false);
+  gl.useProgram(mainProgram);
   gl.bindFramebuffer(gl.FRAMEBUFFER, mainScreen.frameBuffer);
   gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -167,15 +178,17 @@ async function initShader(shaderType, shaderUrl) {
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     throw Error(gl.getShaderInfoLog(shader));
   }
-  gl.attachShader(program, shader);
 
   return shader;
 }
 
 
-async function initProgram() {
-  await initShader(gl.VERTEX_SHADER, glConfig.vertexShader);
-  await initShader(gl.FRAGMENT_SHADER, glConfig.fragmentShader);
+async function initProgram(program, programConfig) {
+  const vertexShader = await initShader(gl.VERTEX_SHADER, programConfig.vertexShader);
+  gl.attachShader(program, vertexShader);
+
+  const fragmentShader = await initShader(gl.FRAGMENT_SHADER, programConfig.fragmentShader);
+  gl.attachShader(program, fragmentShader);
 
   gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
@@ -183,15 +196,16 @@ async function initProgram() {
   }
   gl.useProgram(program);
 
-  glConfig.attributes.forEach((attribute) => {
+  programConfig.attributes.forEach((attribute) => {
     program[attribute] = gl.getAttribLocation(program, attribute);
     gl.enableVertexAttribArray(program[attribute]);
   });
 
-  glConfig.uniforms.forEach((uniform) => {
+  programConfig.uniforms.forEach((uniform) => {
     program[uniform] = gl.getUniformLocation(program, uniform);
   });
 
+  // TODO: set uniforms only for mainProgram
   const {
     filter,
     factor,
@@ -273,12 +287,15 @@ async function init(_config) {
   gl = config.canvas.getContext('webgl');
   gl.clearColor(0, 0, 0, 1);
 
-  program = gl.createProgram();
-  mainScreen = new Screen(gl, program);
-  samplingScreen = new Screen(gl, program, config.imgSrcs.length);
+  mainProgram = gl.createProgram();
+  mainScreen = new Screen(gl, mainProgram);
+
+  samplingProgram = gl.createProgram();
+  samplingScreen = new Screen(gl, samplingProgram, config.imgSrcs.length);
 
   await Promise.all([
-    initProgram(),
+    initProgram(mainProgram, mainProgramConfig),
+    initProgram(samplingProgram, samplingProgramConfig),
     initTextures(),
     initDataBuffers(),
   ]);
@@ -313,7 +330,8 @@ function move(delta) {
     default:
   }
 
-  gl.uniform2f(program.uTextureOffset, offset.x, offset.y);
+  gl.useProgram(samplingProgram);
+  gl.uniform2f(samplingProgram.uTextureOffset, offset.x, offset.y);
 }
 
 
