@@ -50,12 +50,11 @@ const config = {
   canvas: null,
   mode: modes.PARABOLIC,
   direction: directions.HORIZONTAL,
-  factor: [0, 0],
-  multiplier: [0, 0],
-  originOffset: [0, 0],
-  recover: [1, 1],
+  factor: 0.1,
+  multiplier: 0.1,
+  originOffset: -0.5,
+  recover: 1,
   imgSrcs: [],
-  imgSrc: null,
   fps: 60,
 };
 
@@ -184,6 +183,24 @@ async function initShader(shaderType, shaderUrl) {
 
 
 function setUniforms() {
+  switch (config.direction) {
+    case directions.VERTICAL:
+      config.factor = [config.factor, 0];
+      config.multiplier = [config.multiplier, 0];
+      config.originOffset = [0, config.originOffset];
+      config.recover = [1, config.recover];
+      break;
+
+    case directions.HORIZONTAL:
+      config.factor = [0, config.factor];
+      config.multiplier = [0, config.multiplier];
+      config.originOffset = [config.originOffset, 0];
+      config.recover = [config.recover, 1];
+      break;
+
+    default:
+  }
+
   gl.uniform1i(mainProgram.uMode, config.mode);
   gl.uniform2fv(mainProgram.uFactor, config.factor);
   gl.uniform2fv(mainProgram.uMultiplier, config.multiplier);
