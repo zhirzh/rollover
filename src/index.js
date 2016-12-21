@@ -183,6 +183,15 @@ async function initShader(shaderType, shaderUrl) {
 }
 
 
+function setUniforms() {
+  gl.uniform1i(mainProgram.uMode, config.mode);
+  gl.uniform2fv(mainProgram.uFactor, config.factor);
+  gl.uniform2fv(mainProgram.uMultiplier, config.multiplier);
+  gl.uniform2fv(mainProgram.uOriginOffset, config.originOffset);
+  gl.uniform2fv(mainProgram.uRecover, config.recover);
+}
+
+
 async function initProgram(program, programConfig) {
   const vertexShader = await initShader(gl.VERTEX_SHADER, programConfig.vertexShader);
   gl.attachShader(program, vertexShader);
@@ -204,20 +213,6 @@ async function initProgram(program, programConfig) {
   programConfig.uniforms.forEach((uniform) => {
     program[uniform] = gl.getUniformLocation(program, uniform);
   });
-
-  // TODO: set uniforms only for mainProgram
-  const {
-    mode,
-    factor,
-    multiplier,
-    originOffset,
-    recover,
-  } = config;
-  gl.uniform1i(program.uMode, mode);
-  gl.uniform2fv(program.uFactor, factor);
-  gl.uniform2fv(program.uMultiplier, multiplier);
-  gl.uniform2fv(program.uOriginOffset, originOffset);
-  gl.uniform2fv(program.uRecover, recover);
 }
 
 
@@ -294,7 +289,7 @@ async function init(_config) {
   samplingScreen = new Screen(gl, samplingProgram, config.imgSrcs.length);
 
   await Promise.all([
-    initProgram(mainProgram, mainProgramConfig),
+    initProgram(mainProgram, mainProgramConfig).then(setUniforms),
     initProgram(samplingProgram, samplingProgramConfig),
     initTextures(),
     initDataBuffers(),
