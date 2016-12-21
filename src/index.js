@@ -29,7 +29,7 @@ const mainProgramConfig = {
   ],
   uniforms: [
     'uFactor',
-    'ufilter',
+    'uFilter',
     'uMultiplier',
     'uOriginOffset',
     'uRecover',
@@ -136,6 +136,7 @@ function resize() {
     default:
   }
 
+  gl.useProgram(samplingProgram);
   gl.uniform2f(samplingProgram.uBGAspect, aspect.x, aspect.y);
   gl.uniform2f(samplingProgram.uInitialTextureOffset, initialTextureOffset.x, initialTextureOffset.y);
 }
@@ -213,7 +214,7 @@ async function initProgram(program, programConfig) {
     originOffset,
     recover,
   } = config;
-  gl.uniform1i(program.ufilter, filter);
+  gl.uniform1i(program.uFilter, filter);
   gl.uniform2fv(program.uFactor, factor);
   gl.uniform2fv(program.uMultiplier, multiplier);
   gl.uniform2fv(program.uOriginOffset, originOffset);
