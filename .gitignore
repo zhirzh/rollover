@@ -1,1 +1,3 @@
 dist/roll-over.js*
+dist/img/
+node_modules

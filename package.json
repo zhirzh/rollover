@@ -18,17 +18,15 @@
   },
   "homepage": "https://github.com/zhirzh/rollover#readme",
   "dependencies": {
-    "babel-eslint": "^6.1.2",
-    "babel-loader": "^6.2.5",
-    "babel-polyfill": "^6.13.0",
-    "babel-preset-latest": "^6.14.0",
-    "babel-register": "^6.14.0",
-    "eslint": "^3.6.0",
-    "eslint-config-airbnb": "^11.2.0",
-    "eslint-plugin-import": "^1.16.0",
-    "eslint-plugin-jsx-a11y": "^2.2.2",
-    "eslint-plugin-react": "^6.3.0",
-    "webpack": "^1.13.2",
-    "whatwg-fetch": "^1.0.0"
+    "babel-eslint": "^7.1.1",
+    "babel-loader": "^6.2.10",
+    "babel-polyfill": "^6.20.0",
+    "babel-preset-latest": "^6.16.0",
+    "babel-register": "^6.18.0",
+    "eslint": "^3.12.2",
+    "eslint-config-airbnb-base": "^11.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "webpack": "^1.14.0",
+    "whatwg-fetch": "^2.0.1"
   }
 }
