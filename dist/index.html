@@ -47,14 +47,11 @@
   };
 </script>
 <script type="text/javascript">
-   /*eslint-disable*/
-  var lastY = window.scrollY;
+  /*eslint-disable*/
   var scrollpad = document.querySelector('#scrollpad');
-  scrollpad.style.height = '10000px';
+  scrollpad.style.height = (10 * window.innerHeight) + 'px';
   window.onscroll = () => {
-    var delta = window.scrollY - lastY;
-    RollOver.move(delta / 1000);
-    lastY = window.scrollY;
+    RollOver.move(window.scrollY / (scrollpad.scrollHeight - window.innerHeight));
   };
 </script>
 </html>

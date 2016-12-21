@@ -313,13 +313,15 @@ async function init(_config) {
 }
 
 
-function move(delta) {
+function move(percent) {
   // TODO: choose better name for variable `foo`
   const foo = config.imgUrls.length - 1;
+  const scrollStart = 0;
+  const scrollStop = 2 * (foo - initialTextureOffset[config.direction]);
 
-  textureOffset[config.direction] += delta;
-  textureOffset[config.direction] = Math.max(textureOffset[config.direction], 0);
-  textureOffset[config.direction] = Math.min(textureOffset[config.direction], 2 * (foo - initialTextureOffset[config.direction]));
+  textureOffset[config.direction] = percent * scrollStop;
+  textureOffset[config.direction] = Math.max(textureOffset[config.direction], scrollStart);
+  textureOffset[config.direction] = Math.min(textureOffset[config.direction], scrollStop);
 
   gl.useProgram(samplingProgram);
   gl.uniform2fv(samplingProgram.uTextureOffset, textureOffset);
