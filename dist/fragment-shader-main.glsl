@@ -2,7 +2,7 @@ precision mediump float;
 
 uniform sampler2D uSampler;
 
-uniform int uFilter;
+uniform int uMode;
 
 uniform vec2 uFactor;
 uniform vec2 uMultiplier;
@@ -28,13 +28,13 @@ void main() {
     XY += uOriginOffset;
 
     /*Calculate distortion*/
-    if (uFilter == 1) {
+    if (uMode == 1) {
         XY = arctanDistortion(XY, uFactor, uMultiplier);
-    } else if (uFilter == 2) {
+    } else if (uMode == 2) {
         XY = linearDistortion(XY, uMultiplier);
-    } else if (uFilter == 3) {
+    } else if (uMode == 3) {
         XY = parabolicDistortion(XY, uMultiplier);
-    } else if (uFilter == 4) {
+    } else if (uMode == 4) {
         XY = polynomialDistortion(XY, uFactor, uMultiplier);
     }
 
@@ -44,7 +44,7 @@ void main() {
     /*Recover edges*/
     XY *= uRecover;
 
-    /*Filter valid regions*/
+    /*Mode valid regions*/
     isValid = lessThanEqual(abs(XY), vec2(1, 1));
     if (isValid.x && isValid.y) {
         /*De-normalize*/

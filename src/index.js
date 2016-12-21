@@ -3,19 +3,14 @@ import {
 } from './utils';
 
 
-const offset = {
-  x: 0,
-  y: 0,
-};
-
-const filters = {
+const modes = {
   ARCTAN: 1,
   LINEAR: 2,
   PARABOLIC: 3,
   POLYNOMIAL: 4,
 };
 
-const modes = {
+const directions = {
   VERTICAL: 1,
   HORIZONTAL: 2,
 };
@@ -29,7 +24,7 @@ const mainProgramConfig = {
   ],
   uniforms: [
     'uFactor',
-    'uFilter',
+    'uMode',
     'uMultiplier',
     'uOriginOffset',
     'uRecover',
@@ -53,8 +48,8 @@ const samplingProgramConfig = {
 
 const config = {
   canvas: null,
-  filter: filters.PARABOLIC,
-  mode: modes.HORIZONTAL,
+  mode: modes.PARABOLIC,
+  direction: directions.HORIZONTAL,
   factor: [0, 0],
   multiplier: [0, 0],
   originOffset: [0, 0],
@@ -64,15 +59,19 @@ const config = {
   fps: 60,
 };
 
-let last = 0;
-let aspect;
-let initialTextureOffset;
-
 let gl;
 let mainProgram;
 let samplingProgram;
 let mainScreen;
 let samplingScreen;
+
+let last = 0;
+let aspect;
+let initialTextureOffset;
+const offset = {
+  x: 0,
+  y: 0,
+};
 
 
 function initSamplingFrameBuffer() {
@@ -121,13 +120,13 @@ function resize() {
     x: 0,
     y: 0,
   };
-  switch (config.mode) {
-    case modes.VERTICAL:
+  switch (config.direction) {
+    case directions.VERTICAL:
       aspect.y = viewportAspect / imgAspect;
       initialTextureOffset.y = (1 / aspect.y) - 1;
       break;
 
-    case modes.HORIZONTAL:
+    case directions.HORIZONTAL:
       aspect.x = imgAspect / viewportAspect;
       // aspect.x = 1;
       initialTextureOffset.x = -1 * ((1 / aspect.x) - 1);
@@ -208,13 +207,13 @@ async function initProgram(program, programConfig) {
 
   // TODO: set uniforms only for mainProgram
   const {
-    filter,
+    mode,
     factor,
     multiplier,
     originOffset,
     recover,
   } = config;
-  gl.uniform1i(program.uFilter, filter);
+  gl.uniform1i(program.uMode, mode);
   gl.uniform2fv(program.uFactor, factor);
   gl.uniform2fv(program.uMultiplier, multiplier);
   gl.uniform2fv(program.uOriginOffset, originOffset);
@@ -230,12 +229,12 @@ function initDataBuffers() {
       y: 0,
     };
 
-    switch (config.mode) {
-      case modes.VERTICAL:
+    switch (config.direction) {
+      case directions.VERTICAL:
         tileOffset.y = -1 * (2 * idx);
         break;
 
-      case modes.HORIZONTAL:
+      case directions.HORIZONTAL:
         tileOffset.x = 2 * idx;
         break;
 
@@ -309,8 +308,8 @@ async function init(_config) {
 
 
 function move(delta) {
-  switch (config.mode) {
-    case modes.VERTICAL:
+  switch (config.direction) {
+    case directions.VERTICAL:
       offset.y += delta;
       if (offset.y < 0) {
         offset.y = 0;
@@ -319,7 +318,7 @@ function move(delta) {
       }
       break;
 
-    case modes.HORIZONTAL:
+    case directions.HORIZONTAL:
       offset.x += -1 * delta;
       if (offset.x > 0) {
         offset.x = 0;
@@ -338,7 +337,7 @@ function move(delta) {
 
 export {
   init,
-  filters,
   modes,
+  directions,
   move,
 };

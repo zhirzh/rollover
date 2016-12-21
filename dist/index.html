@@ -21,12 +21,12 @@
 </body>
 <script type="text/javascript" src="roll-over.js"></script>
 <script type="text/javascript">
+  /*eslint-disable*/
   document.body.onload = function init() {
     RollOver.init({
       canvas: document.querySelector('#rollover-bg'),
-      filter: RollOver.filters.PARABOLIC,
-      mode: RollOver.modes.VERTICAL,
-      mode: RollOver.modes.HORIZONTAL,
+      mode: RollOver.modes.PARABOLIC,
+      direction: RollOver.directions.VERTICAL,
       factor: [0, 0],
       multiplier: [0, 0],
       originOffset: [0, 0],
@@ -38,7 +38,7 @@
         'img/4.jpg',
         'img/5.jpg',
       ],
-      fps: 10,
+      fps: 60,
     });
   };
 
