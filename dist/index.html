@@ -29,12 +29,13 @@
     RollOver.init({
       canvas: document.querySelector('#rollover-bg'),
       mode: RollOver.modes.PARABOLIC,
+      direction: RollOver.directions.HORIZONTAL,
       direction: RollOver.directions.VERTICAL,
-      factor: 0.1,
-      multiplier: 0.1,
-      originOffset: -0.5,
+      factor: 0,
+      multiplier: 0,
+      originOffset: 0,
       recover: 1,
-      imgSrcs: [
+      imgUrls: [
         'img/1.jpg',
         'img/2.jpg',
         'img/3.jpg',

@@ -11,8 +11,8 @@ const modes = {
 };
 
 const directions = {
+  HORIZONTAL: 0,
   VERTICAL: 1,
-  HORIZONTAL: 2,
 };
 
 const mainProgramConfig = {
@@ -54,7 +54,7 @@ const config = {
   multiplier: 0.1,
   originOffset: -0.5,
   recover: 1,
-  imgSrcs: [],
+  imgUrls: [],
   fps: 60,
 };
 
@@ -65,11 +65,12 @@ let mainScreen;
 let samplingScreen;
 
 let last = 0;
-let aspect;
-let initialTextureOffset;
-const offset = {
-  x: 0,
-  y: 0,
+const aspect = [1, 1];
+const textureOffset = [0, 0];
+const initialTextureOffset = [0, 0];
+const tileSize = {
+  W: 0,
+  H: 0,
 };
 
 
@@ -99,11 +100,8 @@ function initSamplingFrameBuffer() {
 
 
 function resize() {
-  const imgWidth = 1080;
-  const imgHeight = 7000 / 5;
-
   const viewportAspect = window.innerWidth / window.innerHeight;
-  const imgAspect = imgWidth / imgHeight;
+  const imgAspect = tileSize.W / tileSize.H;
 
   config.canvas.style.width = `${window.innerWidth}px`;
   config.canvas.style.height = `${window.innerHeight}px`;
@@ -111,32 +109,22 @@ function resize() {
   config.canvas.width = window.innerWidth;
   config.canvas.height = window.innerHeight;
 
-  aspect = {
-    x: 1,
-    y: 1,
-  };
-  initialTextureOffset = {
-    x: 0,
-    y: 0,
-  };
   switch (config.direction) {
     case directions.VERTICAL:
-      aspect.y = viewportAspect / imgAspect;
-      initialTextureOffset.y = (1 / aspect.y) - 1;
+      aspect[config.direction] = viewportAspect / imgAspect;
       break;
 
     case directions.HORIZONTAL:
-      aspect.x = imgAspect / viewportAspect;
-      // aspect.x = 1;
-      initialTextureOffset.x = -1 * ((1 / aspect.x) - 1);
+      aspect[config.direction] = imgAspect / viewportAspect;
       break;
 
     default:
   }
+  initialTextureOffset[config.direction] = (1 / aspect[config.direction]) - 1;
 
   gl.useProgram(samplingProgram);
-  gl.uniform2f(samplingProgram.uBGAspect, aspect.x, aspect.y);
-  gl.uniform2f(samplingProgram.uInitialTextureOffset, initialTextureOffset.x, initialTextureOffset.y);
+  gl.uniform2fv(samplingProgram.uBGAspect, aspect);
+  gl.uniform2fv(samplingProgram.uInitialTextureOffset, initialTextureOffset);
 }
 
 
@@ -263,12 +251,18 @@ function initDataBuffers() {
 
 
 function fetchImages() {
-  return Promise.all(config.imgSrcs.map((imgSrc) => {
+  return Promise.all(config.imgUrls.map((imgUrl) => {
     const img = new Image();
-    img.src = imgSrc;
+    img.src = imgUrl;
 
     return new Promise((resolve) => {
-      img.onload = () => resolve(img);
+      img.onload = () => {
+        if (tileSize.W === 0 || tileSize.H === 0) {
+          tileSize.W = img.width;
+          tileSize.H = img.height;
+        }
+        resolve(img);
+      };
     });
   }));
 }
@@ -303,7 +297,7 @@ async function init(_config) {
   mainScreen = new Screen(gl, mainProgram);
 
   samplingProgram = gl.createProgram();
-  samplingScreen = new Screen(gl, samplingProgram, config.imgSrcs.length);
+  samplingScreen = new Screen(gl, samplingProgram, config.imgUrls.length);
 
   await Promise.all([
     initProgram(mainProgram, mainProgramConfig).then(setUniforms),
@@ -320,30 +314,15 @@ async function init(_config) {
 
 
 function move(delta) {
-  switch (config.direction) {
-    case directions.VERTICAL:
-      offset.y += delta;
-      if (offset.y < 0) {
-        offset.y = 0;
-      } else if (offset.y > 8 - (2 * initialTextureOffset.y)) {
-        offset.y = 8 - (2 * initialTextureOffset.y);
-      }
-      break;
+  // TODO: choose better name for variable `foo`
+  const foo = config.imgUrls.length - 1;
 
-    case directions.HORIZONTAL:
-      offset.x += -1 * delta;
-      if (offset.x > 0) {
-        offset.x = 0;
-      } else if (offset.x < -8 - (2 * initialTextureOffset.x)) {
-        offset.x = -8 - (2 * initialTextureOffset.x);
-      }
-      break;
-
-    default:
-  }
+  textureOffset[config.direction] += delta;
+  textureOffset[config.direction] = Math.max(textureOffset[config.direction], 0);
+  textureOffset[config.direction] = Math.min(textureOffset[config.direction], 2 * (foo - initialTextureOffset[config.direction]));
 
   gl.useProgram(samplingProgram);
-  gl.uniform2f(samplingProgram.uTextureOffset, offset.x, offset.y);
+  gl.uniform2fv(samplingProgram.uTextureOffset, textureOffset);
 }
 
 

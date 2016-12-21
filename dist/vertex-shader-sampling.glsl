@@ -8,6 +8,8 @@ uniform vec2 uTextureOffset;
 varying vec2 vTextureCoord;
 
 void main() {
-    gl_Position = vec4((aVertexPosition + uInitialTextureOffset + uTextureOffset) * uBGAspect, 0, 1);
+    // flip offset along x-axis to simplify offset calculation in JS
+    vec2 offset = (uInitialTextureOffset + uTextureOffset) * vec2(-1, 1);
+    gl_Position = vec4((aVertexPosition + offset) * uBGAspect, 0, 1);
     vTextureCoord = aTextureCoord;
 }
