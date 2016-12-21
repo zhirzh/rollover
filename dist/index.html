@@ -24,9 +24,9 @@
   document.body.onload = function init() {
     RollOver.init({
       canvas: document.querySelector('#rollover-bg'),
-      mode: RollOver.modes.PARABOLIC,
-      type: RollOver.types.VERTICAL,
-      type: RollOver.types.HORIZONTAL,
+      filter: RollOver.filters.PARABOLIC,
+      mode: RollOver.modes.VERTICAL,
+      mode: RollOver.modes.HORIZONTAL,
       factor: [0, 0],
       multiplier: [0, 0],
       originOffset: [0, 0],
@@ -38,7 +38,7 @@
         'img/4.jpg',
         'img/5.jpg',
       ],
-      fps: 60,
+      fps: 1,
     });
   };
 
