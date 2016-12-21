@@ -7,6 +7,8 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      scroll-behavior: smooth;
+
     }
     #rollover-bg {
       position: fixed;
@@ -18,6 +20,7 @@
 </head>
 <body>
   <canvas id="rollover-bg"></canvas>
+  <div id="scrollpad"></div>
 </body>
 <script type="text/javascript" src="roll-over.js"></script>
 <script type="text/javascript">
@@ -41,21 +44,16 @@
       fps: 60,
     });
   };
-
-  window.addEventListener('keydown', function move(e) {
-    switch (e.key) {
-      case 'ArrowDown':
-        if (e.shiftKey) {
-          RollOver.move(0.01);
-        } else {
-          RollOver.move(0.1);
-        }
-        break;
-
-      case 'ArrowUp':
-        RollOver.move(-0.1);
-        break;
-    }
-  });
+</script>
+<script type="text/javascript">
+   /*eslint-disable*/
+  var lastY = window.scrollY;
+  var scrollpad = document.querySelector('#scrollpad');
+  scrollpad.style.height = '10000px';
+  window.onscroll = () => {
+    var delta = window.scrollY - lastY;
+    RollOver.move(delta / 1000);
+    lastY = window.scrollY;
+  };
 </script>
 </html>
