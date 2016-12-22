@@ -28,13 +28,6 @@
   document.body.onload = function init() {
     RollOver.init({
       canvas: document.querySelector('#rollover-bg'),
-      mode: RollOver.modes.PARABOLIC,
-      direction: RollOver.directions.HORIZONTAL,
-      direction: RollOver.directions.VERTICAL,
-      factor: 0,
-      multiplier: 0,
-      originOffset: 0,
-      recover: 1,
       imgUrls: [
         'img/1.jpg',
         'img/2.jpg',
@@ -42,7 +35,13 @@
         'img/4.jpg',
         'img/5.jpg',
       ],
-      fps: 60,
+      // mode: RollOver.modes.PARABOLIC,
+      // direction: RollOver.directions.VERTICAL,
+      // factor: 0,
+      // multiplier: 0,
+      // originOffset: 0,
+      // recover: 1,
+      // fps: 60,
     });
   };
 </script>
