@@ -215,7 +215,7 @@ function initDataBuffers() {
 
     switch (config.direction) {
       case directions.VERTICAL:
-        tileOffset.y = -1 * (2 * idx);
+        tileOffset.y = -2 * idx;
         break;
 
       case directions.HORIZONTAL:
