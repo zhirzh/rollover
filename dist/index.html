@@ -1,15 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TEST</title>
+  <title>Test / Demo</title>
   <style type="text/css">
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      scroll-behavior: smooth;
-
-    }
     #rollover-bg {
       position: fixed;
       z-index: -1000;
@@ -49,8 +42,10 @@
   /*eslint-disable*/
   var scrollpad = document.querySelector('#scrollpad');
   scrollpad.style.height = (10 * window.innerHeight) + 'px';
-  window.onscroll = () => {
-    RollOver.move(window.scrollY / (scrollpad.scrollHeight - window.innerHeight));
-  };
+
+  window.addEventListener('scroll', function move() {
+    var distance = window.scrollY / (scrollpad.scrollHeight - window.innerHeight);
+    RollOver.move(distance);
+  });
 </script>
 </html>
