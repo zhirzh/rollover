@@ -321,9 +321,17 @@ function move(percent) {
 }
 
 
+function update(_config) {
+  // for demo only
+  Object.assign(config, _config);
+  setUniforms();
+}
+
+
 export {
   init,
   modes,
   directions,
   move,
+  update,
 };

@@ -1,43 +1,150 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Test / Demo</title>
+  <title>RollOver - Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
   <style type="text/css">
+    * {
+      margin: 0;
+      padding: 0;
+      font: sans-serif;
+      box-sizing: border-box;
+    }
     #rollover-bg {
       position: fixed;
       z-index: -1000;
       top: 0;
       left: 0;
     }
+    input {
+      box-shadow: none!important;
+      border: none!important;
+    }
+    .form-control:focus,
+    .form-control:active {
+      border-color: initial;
+      box-shadow: none!important;
+    }
+    #cpanel {
+      transform: translateX(100%);
+      transition: transform 200ms 2s;
+    }
+    #cpanel:hover {
+      transform: translateX(0);
+      transition: transform 200ms 0s;
+    }
+    #tab {
+      height: 50px;
+      line-height: 50px;
+      width: 50px;
+      text-align: center;
+      background-color: #0af;
+      color: white;
+      box-shadow: 0 0 10px #eee;
+    }
   </style>
 </head>
 <body>
   <canvas id="rollover-bg"></canvas>
+  <div class="container-fluidx">
+    <div class="row">
+      <div class="col-sm-4 col-xs-8" style="position: fixed; right: 0; padding: 0;">
+        <div id="cpanel" class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Control Panel</h3>
+            <div style="position: absolute; right: 100%; top: 0;">
+              <h1 id="tab">+</h1>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <form class="form-horizontal">
+              <div class="form-group">
+                <label for="mode" class="col-sm-4 control-label">Mode</label>
+                <div class="col-sm-8">
+                  <select id="mode" class="form-control">
+                    <option value="PARABOLIC" selected>Parabolic</option>
+                    <option value="LINEAR">Linear</option>
+                    <option value="POLYNOMIAL">Polynomial</option>
+                    <option value="ARCTAN">Arctan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="direction" class="col-sm-4 control-label">Direction</label>
+                <div class="col-sm-8">
+                  <select id="direction" class="form-control">
+                    <option value="VERTICAL" selected>Vertical</option>
+                    <option value="HORIZONTAL">Horizontal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="factor" class="col-sm-4 control-label">Factor (<span id="factor-value">&hellip;</span>)</label>
+                <div class="col-sm-8">
+                  <input type="range" id="factor" class="form-control" min="0" max="5" step="0.1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="multiplier" class="col-sm-4 control-label">Multiplier (<span id="multiplier-value">&hellip;</span>)</label>
+                <div class="col-sm-8">
+                  <input type="range" id="multiplier" class="form-control" min="0" max="2" step="0.01">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="originOffset" class="col-sm-4 control-label">Offset (<span id="originOffset-value">&hellip;</span>)</label>
+                <div class="col-sm-8">
+                  <input type="range" id="originOffset" class="form-control" min="-5" max="5" step="0.1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="recover" class="col-sm-4 control-label">Recover (<span id="recover-value">&hellip;</span>)</label>
+                <div class="col-sm-8">
+                  <input type="range" id="recover" class="form-control" min="0" max="5" step="0.1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="fps" class="col-sm-4 control-label">FPS (<span id="fps-value">&hellip;</span>)</label>
+                <div class="col-sm-8">
+                  <input type="range" id="fps" class="form-control" min="1" max="120" step="1">
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel-footer text-center">
+            <div class="btn-group btn-group-justified">
+              <a href="./?demo=test" id="test" class="btn btn-default" type="button">Test</a>
+              <a href="./?demo=moses" id="moses" class="btn btn-default" type="button">Moses</a>
+            </div>
+
+            <div class="btn-group btn-group-justified">
+              <a href="./?demo=mahabharat" id="mahabharat" class="btn btn-default" type="button">Mahabharat</a>
+              <a href="./?demo=noah" id="noah" class="btn btn-default" type="button">Noah</a>
+            </div>
+
+            <div class="btn-group btn-group-justified">
+              <a href="https://github.com/zhirzh/rollover" class="btn btn-default xbtn-block" target="_blank" style="xpadding: 0">
+                <img src="img/github.png">
+                <!-- Source Code -->
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="scrollpad"></div>
 </body>
+
 <script type="text/javascript" src="roll-over.js"></script>
-<script type="text/javascript">
-  /*eslint-disable*/
-  document.body.onload = function init() {
-    RollOver.init({
-      canvas: document.querySelector('#rollover-bg'),
-      imgUrls: [
-        'img/1.jpg',
-        'img/2.jpg',
-        'img/3.jpg',
-        'img/4.jpg',
-        'img/5.jpg',
-      ],
-      // mode: RollOver.modes.PARABOLIC,
-      // direction: RollOver.directions.VERTICAL,
-      // factor: 0,
-      // multiplier: 0,
-      // originOffset: 0,
-      // recover: 1,
-      // fps: 60,
-    });
-  };
-</script>
 <script type="text/javascript">
   /*eslint-disable*/
   var scrollpad = document.querySelector('#scrollpad');
@@ -47,5 +154,99 @@
     var distance = window.scrollY / (scrollpad.scrollHeight - window.innerHeight);
     RollOver.move(distance);
   });
+</script>
+<script type="text/javascript">
+  /*eslint-disable*/
+  var config = {
+    mode: 'PARABOLIC',
+    direction: 'VERTICAL',
+    factor: 0.1,
+    multiplier: 0.1,
+    originOffset: -0.5,
+    recover: 1,
+    fps: 60,
+  };
+
+  var urlRanges = {
+    test: 5,
+    moses: 10,
+    mahabharat: 8,
+    noah: 12,
+  };
+
+  (function initDemo() {
+    Object.assign(config, JSON.parse(localStorage.getItem('config')));
+
+    var queryObj = queryToObject(location.search);
+    var urls = [];
+    for (var i = 0; i < urlRanges[queryObj.demo]; i++) {
+      urls.push(`img/${queryObj.demo}/${queryObj.demo}${i + 1}.jpg`);
+    }
+    scrollpad.style.height = (2 * urlRanges[queryObj.demo] * window.innerHeight) + 'px';
+    document.getElementById(queryObj.demo).classList.add('active');
+    document.getElementById(queryObj.demo).href = '#';
+
+    var inputs = document.querySelectorAll('input');
+    for (var i = inputs.length - 1; i >= 0; i--) {
+      inputs[i].value = config[inputs[i].id];
+      document.getElementById(`${inputs[i].id}-value`).innerText = config[inputs[i].id];
+
+      inputs[i].oninput = function(e) {
+        document.getElementById(`${e.target.id}-value`).innerText = e.target.value;
+        config[e.target.id] = +e.target.value;
+        update();
+      };
+    }
+
+    var selects = document.querySelectorAll('select');
+    for (var i = selects.length - 1; i >= 0; i--) {
+      selects[i].value = config[selects[i].id];
+      selects[i].onchange = function(e) {
+        config[e.target.id] = e.target.value;
+        if (e.target.id === 'direction') {
+          update(true);
+          return;
+        }
+
+        update();
+      }
+    }
+
+    RollOver.init({
+      canvas: document.getElementById('rollover-bg'),
+      imgUrls: urls,
+      mode: RollOver.modes[config.mode],
+      direction: RollOver.directions[config.direction],
+      factor: config.factor,
+      multiplier: config.multiplier,
+      originOffset: config.originOffset,
+      recover: config.recover,
+      fps: config.fps,
+    });
+  })();
+
+  function update(shouldReload) {
+    localStorage.setItem('config', JSON.stringify(config));
+
+    if (shouldReload) {
+      window.location.reload();
+      return;
+    }
+
+    // RollOver.update is present ONLY in demo code
+    RollOver.update({
+      mode: RollOver.modes[config.mode],
+      direction: RollOver.directions[config.direction],
+      factor: config.factor,
+      multiplier: config.multiplier,
+      originOffset: config.originOffset,
+      recover: config.recover,
+      fps: config.fps,
+    });
+  }
+
+  function queryToObject(str) {
+    return (str || document.location.search).replace(/(^\?)/,'').split("&").map(function(n){return n = n.split("="),this[n[0]] = n[1],this}.bind({}))[0];
+  }
 </script>
 </html>

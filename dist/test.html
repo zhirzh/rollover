@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test</title>
+  <style type="text/css">
+    #rollover-bg {
+      position: fixed;
+      z-index: -1000;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="rollover-bg"></canvas>
+  <div id="scrollpad"></div>
+</body>
+<script type="text/javascript" src="roll-over.js"></script>
+<script type="text/javascript">
+  /*eslint-disable*/
+  document.body.onload = function init() {
+    RollOver.init({
+      canvas: document.querySelector('#rollover-bg'),
+      imgUrls: [
+        'img/1.jpg',
+        'img/2.jpg',
+        'img/3.jpg',
+        'img/4.jpg',
+        'img/5.jpg',
+      ],
+      // mode: RollOver.modes.PARABOLIC,
+      // direction: RollOver.directions.VERTICAL,
+      // factor: 0,
+      // multiplier: 0,
+      // originOffset: 0,
+      // recover: 1,
+      // fps: 60,
+    });
+  };
+</script>
+<script type="text/javascript">
+  /*eslint-disable*/
+  var scrollpad = document.querySelector('#scrollpad');
+  scrollpad.style.height = (10 * window.innerHeight) + 'px';
+
+  window.addEventListener('scroll', function move() {
+    var distance = window.scrollY / (scrollpad.scrollHeight - window.innerHeight);
+    RollOver.move(distance);
+  });
+</script>
+</html>
