@@ -1,6 +1,4 @@
-import {
-  Screen,
-} from './utils';
+import Screen from './screen';
 
 
 const modes = {
@@ -197,9 +195,7 @@ function initSamplingFrameBuffer() {
 
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 
-  frameBuffer.width = 512;
-  frameBuffer.height = 512;
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, frameBuffer.width, frameBuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, samplingScreen.width, samplingScreen.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
   samplingScreen.frameBuffer = frameBuffer;
   mainScreen.texture = texture;
@@ -277,9 +273,9 @@ function render(HRTimestamp) {
 
   gl.useProgram(samplingProgram);
   gl.bindFramebuffer(gl.FRAMEBUFFER, samplingScreen.frameBuffer);
-  gl.viewport(0, 0, samplingScreen.frameBuffer.width, samplingScreen.frameBuffer.height);
+  gl.viewport(0, 0, samplingScreen.width, samplingScreen.height);
   gl.clear(gl.COLOR_BUFFER_BIT);
-  samplingScreen.tiles.forEach(tile => tile.render());
+  samplingScreen.render();
 
   gl.useProgram(mainProgram);
   gl.bindFramebuffer(gl.FRAMEBUFFER, mainScreen.frameBuffer);
@@ -298,8 +294,8 @@ async function init(_config) {
   mainProgram = gl.createProgram();
   samplingProgram = gl.createProgram();
 
-  mainScreen = new Screen(gl, mainProgram);
-  samplingScreen = new Screen(gl, samplingProgram, config.imgUrls.length);
+  mainScreen = new Screen(gl, mainProgram, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  samplingScreen = new Screen(gl, samplingProgram, 512, 512, config.imgUrls.length);
 
   await Promise.all([
     initProgram(mainProgram, mainProgramConfig).then(setUniforms),
