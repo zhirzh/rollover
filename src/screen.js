@@ -102,6 +102,11 @@ class Screen extends Tile {
   }
 
   render() {
+    this.gl.useProgram(this.program);
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBuffer);
+    this.gl.viewport(0, 0, this.width, this.height);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+
     if (this.tiles.length === 0) {
       super.render();
       return;

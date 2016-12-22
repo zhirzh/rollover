@@ -244,6 +244,9 @@ function resize() {
   config.canvas.width = window.innerWidth;
   config.canvas.height = window.innerHeight;
 
+  mainScreen.width = gl.drawingBufferWidth;
+  mainScreen.height = gl.drawingBufferHeight;
+
   switch (config.direction) {
     case directions.VERTICAL:
       aspect[config.direction] = viewportAspect / imgAspect;
@@ -255,6 +258,7 @@ function resize() {
 
     default:
   }
+
   initialTextureOffset[config.direction] = (1 / aspect[config.direction]) - 1;
 
   gl.useProgram(samplingProgram);
@@ -271,16 +275,7 @@ function render(HRTimestamp) {
   }
   last = HRTimestamp;
 
-  gl.useProgram(samplingProgram);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, samplingScreen.frameBuffer);
-  gl.viewport(0, 0, samplingScreen.width, samplingScreen.height);
-  gl.clear(gl.COLOR_BUFFER_BIT);
   samplingScreen.render();
-
-  gl.useProgram(mainProgram);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, mainScreen.frameBuffer);
-  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-  gl.clear(gl.COLOR_BUFFER_BIT);
   mainScreen.render();
 }
 
